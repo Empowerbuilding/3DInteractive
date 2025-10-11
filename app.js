@@ -213,8 +213,8 @@ class HomeDesigner {
         }
         
         const FEET_TO_METERS = 0.3048;
-        const STORY_HEIGHT = 3; // meters per story
-        const WALL_THICKNESS = 0.3; // meters
+        const STORY_HEIGHT = 3.5; // meters per story (taller walls)
+        const WALL_THICKNESS = 0.15; // meters (thinner walls)
         
         this.house = new THREE.Group();
         
@@ -242,35 +242,54 @@ class HomeDesigner {
         const numStories = parseInt(document.getElementById('num-stories')?.value || 1);
         
         // Create walls for each story
-        const extrudeSettings = {
-            depth: WALL_THICKNESS,
-            bevelEnabled: false
-        };
-        
-        const wallGeometry = new THREE.ExtrudeGeometry(shape, extrudeSettings);
-        const wallMaterial = this.getWallMaterial();
-        
         for (let story = 0; story < numStories; story++) {
-            // Create walls
-            const storyWalls = new THREE.Mesh(wallGeometry.clone(), wallMaterial);
-            storyWalls.rotation.x = -Math.PI / 2; // Rotate to stand upright
-            storyWalls.position.y = story * STORY_HEIGHT;
-            this.house.add(storyWalls);
+            const storyY = story * STORY_HEIGHT;
             
-            // Create floor
+            // Create wall segments between each pair of vertices
+            for (let i = 0; i < vertices.length; i++) {
+                const v1 = vertices[i];
+                const v2 = vertices[(i + 1) % vertices.length];
+                
+                // Calculate wall segment dimensions
+                const dx = v2.x - v1.x;
+                const dz = v2.y - v1.y;
+                const wallLength = Math.sqrt(dx * dx + dz * dz);
+                const wallAngle = Math.atan2(dz, dx);
+                
+                // Create wall segment (vertical)
+                const wallGeometry = new THREE.BoxGeometry(wallLength, STORY_HEIGHT, WALL_THICKNESS);
+                const wallMaterial = this.getWallMaterial();
+                const wall = new THREE.Mesh(wallGeometry, wallMaterial);
+                
+                // Position wall at midpoint between vertices, raised up
+                wall.position.x = (v1.x + v2.x) / 2;
+                wall.position.y = storyY + STORY_HEIGHT / 2; // Center vertically at story height
+                wall.position.z = (v1.y + v2.y) / 2;
+                
+                // Rotate wall to align with floor plan edge
+                wall.rotation.y = wallAngle;
+                
+                wall.castShadow = true;
+                wall.receiveShadow = true;
+                
+                this.house.add(wall);
+            }
+            
+            // Create floor for this story (horizontal plane inside the walls)
             const floorGeometry = new THREE.ShapeGeometry(shape);
             const floorMaterial = new THREE.MeshStandardMaterial({
-                color: 0xD3D3D3,
+                color: 0x8B7355, // Wood floor color
                 roughness: 0.8,
                 metalness: 0.0
             });
             const floor = new THREE.Mesh(floorGeometry, floorMaterial);
-            floor.rotation.x = -Math.PI / 2;
-            floor.position.y = story * STORY_HEIGHT;
+            floor.rotation.x = -Math.PI / 2; // Rotate to be horizontal
+            floor.position.y = storyY; // At the bottom of this story
+            floor.receiveShadow = true;
             this.house.add(floor);
         }
         
-        // Add roof
+        // Add roof at the very top
         this.addRoofToCustomShape(shape, vertices, numStories * STORY_HEIGHT);
         
         // Add house to scene
@@ -307,11 +326,13 @@ class HomeDesigner {
         const centerY = (minY + maxY) / 2;
         
         if (roofStyle === 'flat') {
-            // Flat roof - just a plane on top
+            // Flat roof - sits on top of walls
             const roofGeometry = new THREE.ShapeGeometry(shape);
             const roof = new THREE.Mesh(roofGeometry, roofMaterial);
-            roof.rotation.x = -Math.PI / 2;
-            roof.position.y = baseHeight + 0.3;
+            roof.rotation.x = -Math.PI / 2; // Make it horizontal
+            roof.position.y = baseHeight + 0.2; // Slightly above walls to avoid z-fighting
+            roof.castShadow = true;
+            roof.receiveShadow = false;
             this.house.add(roof);
         } else if (roofStyle === 'gable') {
             // Gable roof - triangular
@@ -329,7 +350,8 @@ class HomeDesigner {
             const roofGeometry = new THREE.ExtrudeGeometry(roofShape, extrudeSettings);
             const roof = new THREE.Mesh(roofGeometry, roofMaterial);
             roof.rotation.x = -Math.PI / 2;
-            roof.position.set(0, baseHeight, minY);
+            roof.position.set(0, baseHeight + 0.1, minY); // Position on top of walls
+            roof.castShadow = true;
             this.house.add(roof);
         } else if (roofStyle === 'hip') {
             // Hip roof - pyramid-like
