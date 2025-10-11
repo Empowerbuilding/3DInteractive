@@ -291,6 +291,27 @@ export class ThreeJSGenerator {
             
             // Add the opening (door or window)
             if (opening.type === 'door') {
+                // Calculate wall segment above door
+                const aboveLength = (openingEnd - openingStart) * length;
+                const aboveCenter = (openingStart + openingEnd) / 2;
+                const aboveX = startX + dx * aboveCenter;
+                const aboveZ = startZ + dz * aboveCenter;
+                const aboveHeight = (this.wallHeight * feetToMeters) - opening.height;
+                
+                // Create wall above door (if there's space)
+                if (aboveHeight > 0.1) {  // Only create if height is meaningful
+                    this.createWallSegment(
+                        aboveLength,
+                        aboveHeight,
+                        this.wallThickness * feetToMeters,
+                        aboveX,
+                        yOffset + opening.height + aboveHeight / 2,
+                        aboveZ,
+                        angle
+                    );
+                }
+                
+                // Create door mesh
                 const doorGeometry = new THREE.BoxGeometry(
                     opening.width,
                     opening.height,
