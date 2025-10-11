@@ -2336,6 +2336,10 @@ class HomeDesigner {
     }
 }
 
-// Initialize the application and make it globally accessible
-const homeDesigner = new HomeDesigner();
-window.homeDesigner = homeDesigner;
+// Wait for DOM to be fully loaded before initializing
+document.addEventListener('DOMContentLoaded', () => {
+    console.log('DOM loaded, initializing Home Designer...');
+    const homeDesigner = new HomeDesigner();
+    window.homeDesigner = homeDesigner;
+    console.log('Home Designer initialized successfully');
+});
