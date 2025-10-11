@@ -118,6 +118,34 @@ class FloorPlanApp {
             }
         });
         
+        // Roof Style Dropdown
+        document.getElementById('roof-style')?.addEventListener('change', (e) => {
+            if (this.threejsGenerator) {
+                this.threejsGenerator.setRoofStyle(e.target.value);
+                this.update3DModel();
+            }
+        });
+        
+        // Roof Pitch Slider
+        document.getElementById('roof-pitch')?.addEventListener('input', (e) => {
+            const value = parseInt(e.target.value);
+            document.getElementById('roof-pitch-value').textContent = `${value}:12`;
+            if (this.threejsGenerator) {
+                this.threejsGenerator.setRoofPitch(value);
+                this.update3DModel();
+            }
+        });
+        
+        // Roof Overhang Slider
+        document.getElementById('roof-overhang')?.addEventListener('input', (e) => {
+            const value = parseFloat(e.target.value);
+            document.getElementById('roof-overhang-value').textContent = `${value.toFixed(1)} ft`;
+            if (this.threejsGenerator) {
+                this.threejsGenerator.setRoofOverhang(value);
+                this.update3DModel();
+            }
+        });
+        
         // Manual Regenerate Button
         document.getElementById('regenerate-3d')?.addEventListener('click', () => {
             this.update3DModel();

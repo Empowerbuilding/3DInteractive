@@ -21,6 +21,9 @@ export class ThreeJSGenerator {
         this.wallHeight = 8; // feet
         this.wallThickness = 0.33; // feet (4 inches)
         this.showRoof = true;
+        this.roofStyle = 'hip'; // 'hip', 'gable', or 'flat'
+        this.roofPitch = 6; // pitch ratio (6:12 means 6" rise per 12" run)
+        this.roofOverhang = 1; // feet
         
         // Materials
         this.materials = {
@@ -409,7 +412,7 @@ export class ThreeJSGenerator {
             
             const patioGeometry = new THREE.BoxGeometry(width, 0.3, depth);
             const patioMesh = new THREE.Mesh(patioGeometry, this.materials.patio);
-            patioMesh.position.set(centerX, yOffset - 0.15, centerZ);
+            patioMesh.position.set(centerX, yOffset + 0.15, centerZ);
             patioMesh.castShadow = true;
             patioMesh.receiveShadow = true;
             patioMesh.userData.isBuilding = true;
@@ -434,25 +437,127 @@ export class ThreeJSGenerator {
             maxZ = Math.max(maxZ, z1, z2);
         });
         
-        const roofWidth = maxX - minX + 2;
-        const roofDepth = maxZ - minZ + 2;
-        const roofHeight = Math.max(roofWidth, roofDepth) * 0.3;
+        // Add overhang to dimensions
+        const overhangMeters = this.roofOverhang * feetToMeters;
+        const roofWidth = (maxX - minX) + (2 * overhangMeters);
+        const roofDepth = (maxZ - minZ) + (2 * overhangMeters);
+        const centerX = (minX + maxX) / 2;
+        const centerZ = (minZ + maxZ) / 2;
         
-        const roofGeometry = new THREE.ConeGeometry(
-            Math.sqrt(roofWidth * roofWidth + roofDepth * roofDepth) / 2,
-            roofHeight,
-            4
-        );
-        const roofMesh = new THREE.Mesh(roofGeometry, this.materials.roof);
-        roofMesh.position.set(
-            (minX + maxX) / 2,
-            roofY + roofHeight / 2,
-            (minZ + maxZ) / 2
-        );
-        roofMesh.rotation.y = Math.PI / 4;
-        roofMesh.castShadow = true;
-        roofMesh.userData.isBuilding = true;
-        this.scene.add(roofMesh);
+        // Calculate roof height from pitch (pitch is rise per 12" run)
+        // Height = (width / 2) * (pitch / 12)
+        const roofHeight = (Math.max(roofWidth, roofDepth) / 2) * (this.roofPitch / 12);
+        
+        let roofMesh;
+        
+        if (this.roofStyle === 'flat') {
+            // Flat roof - just a thin box
+            const roofGeometry = new THREE.BoxGeometry(roofWidth, 0.3, roofDepth);
+            roofMesh = new THREE.Mesh(roofGeometry, this.materials.roof);
+            roofMesh.position.set(centerX, roofY + 0.15, centerZ);
+            
+        } else if (this.roofStyle === 'hip') {
+            // Hip roof - pyramid shape (4-sided)
+            const roofGeometry = new THREE.ConeGeometry(
+                Math.sqrt(roofWidth * roofWidth + roofDepth * roofDepth) / 2,
+                roofHeight,
+                4
+            );
+            roofMesh = new THREE.Mesh(roofGeometry, this.materials.roof);
+            roofMesh.position.set(centerX, roofY + roofHeight / 2, centerZ);
+            roofMesh.rotation.y = Math.PI / 4;
+            
+        } else if (this.roofStyle === 'gable') {
+            // Gable roof - triangular ends
+            // Determine which direction is longer for ridge orientation
+            const ridgeAlongX = roofWidth > roofDepth;
+            
+            if (ridgeAlongX) {
+                // Ridge runs along X axis (width), triangular ends on Z axis (depth)
+                const geometry = new THREE.BufferGeometry();
+                const vertices = new Float32Array([
+                    // Front triangle
+                    -roofWidth/2, 0, -roofDepth/2,
+                    roofWidth/2, 0, -roofDepth/2,
+                    0, roofHeight, -roofDepth/2,
+                    
+                    // Back triangle
+                    -roofWidth/2, 0, roofDepth/2,
+                    0, roofHeight, roofDepth/2,
+                    roofWidth/2, 0, roofDepth/2,
+                    
+                    // Left slope
+                    -roofWidth/2, 0, -roofDepth/2,
+                    0, roofHeight, -roofDepth/2,
+                    0, roofHeight, roofDepth/2,
+                    
+                    -roofWidth/2, 0, -roofDepth/2,
+                    0, roofHeight, roofDepth/2,
+                    -roofWidth/2, 0, roofDepth/2,
+                    
+                    // Right slope
+                    roofWidth/2, 0, -roofDepth/2,
+                    roofWidth/2, 0, roofDepth/2,
+                    0, roofHeight, roofDepth/2,
+                    
+                    roofWidth/2, 0, -roofDepth/2,
+                    0, roofHeight, roofDepth/2,
+                    0, roofHeight, -roofDepth/2
+                ]);
+                
+                geometry.setAttribute('position', new THREE.BufferAttribute(vertices, 3));
+                geometry.computeVertexNormals();
+                
+                roofMesh = new THREE.Mesh(geometry, this.materials.roof);
+                roofMesh.position.set(centerX, roofY, centerZ);
+                
+            } else {
+                // Ridge runs along Z axis (depth), triangular ends on X axis (width)
+                const geometry = new THREE.BufferGeometry();
+                const vertices = new Float32Array([
+                    // Front triangle
+                    -roofWidth/2, 0, -roofDepth/2,
+                    -roofWidth/2, 0, roofDepth/2,
+                    -roofWidth/2, roofHeight, 0,
+                    
+                    // Back triangle
+                    roofWidth/2, 0, -roofDepth/2,
+                    roofWidth/2, roofHeight, 0,
+                    roofWidth/2, 0, roofDepth/2,
+                    
+                    // Left slope
+                    -roofWidth/2, 0, -roofDepth/2,
+                    -roofWidth/2, roofHeight, 0,
+                    roofWidth/2, roofHeight, 0,
+                    
+                    -roofWidth/2, 0, -roofDepth/2,
+                    roofWidth/2, roofHeight, 0,
+                    roofWidth/2, 0, -roofDepth/2,
+                    
+                    // Right slope
+                    -roofWidth/2, 0, roofDepth/2,
+                    roofWidth/2, 0, roofDepth/2,
+                    roofWidth/2, roofHeight, 0,
+                    
+                    -roofWidth/2, 0, roofDepth/2,
+                    roofWidth/2, roofHeight, 0,
+                    -roofWidth/2, roofHeight, 0
+                ]);
+                
+                geometry.setAttribute('position', new THREE.BufferAttribute(vertices, 3));
+                geometry.computeVertexNormals();
+                
+                roofMesh = new THREE.Mesh(geometry, this.materials.roof);
+                roofMesh.position.set(centerX, roofY, centerZ);
+            }
+        }
+        
+        if (roofMesh) {
+            roofMesh.castShadow = true;
+            roofMesh.receiveShadow = true;
+            roofMesh.userData.isBuilding = true;
+            this.scene.add(roofMesh);
+        }
     }
     
     clearBuilding() {
@@ -492,6 +597,18 @@ export class ThreeJSGenerator {
     
     setShowRoof(show) {
         this.showRoof = show;
+    }
+    
+    setRoofStyle(style) {
+        this.roofStyle = style;
+    }
+    
+    setRoofPitch(pitch) {
+        this.roofPitch = pitch;
+    }
+    
+    setRoofOverhang(overhang) {
+        this.roofOverhang = overhang;
     }
     
     animate() {

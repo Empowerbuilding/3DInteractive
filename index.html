@@ -65,6 +65,28 @@
       </label>
     </div>
     
+    <!-- Roof Style Controls -->
+    <div class="control-section-3d">
+      <label>Roof Style:</label>
+      <select id="roof-style">
+        <option value="hip" selected>Hip Roof</option>
+        <option value="gable">Gable Roof</option>
+        <option value="flat">Flat Roof</option>
+      </select>
+    </div>
+    
+    <div class="control-section-3d">
+      <label>Roof Pitch:</label>
+      <input type="range" id="roof-pitch" min="4" max="12" step="1" value="6">
+      <span id="roof-pitch-value">6:12</span>
+    </div>
+    
+    <div class="control-section-3d">
+      <label>Overhang:</label>
+      <input type="range" id="roof-overhang" min="0" max="3" step="0.5" value="1">
+      <span id="roof-overhang-value">1.0 ft</span>
+    </div>
+    
     <div class="control-section">
       <button id="clear-plan">Clear Plan</button>
       <button id="undo">Undo</button>
