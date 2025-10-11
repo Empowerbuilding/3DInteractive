@@ -1,38 +1,44 @@
-// 2D Floor Plan Drawing Editor
-// Handles canvas drawing and user interactions
+// 2D Floor Plan Drawing Editor - Drag-to-Draw Walls
+// Click and drag to draw individual wall segments
 
 export class FloorPlanEditor {
     constructor(canvasId) {
         this.canvas = document.getElementById(canvasId);
         this.ctx = this.canvas.getContext('2d');
         
-        // Drawing state - MUST BE INITIALIZED FIRST!
-        this.vertices = []; // Array of {x, y} points
+        // Data structure - array of walls
+        this.walls = []; // Each wall: {startX, startY, endX, endY}
+        this.currentWall = null; // Wall being drawn
         this.isDrawing = false;
-        this.isClosed = false;
         this.mode = 'draw'; // Current mode: draw, edit, door, window
+        this.selectedWallIndex = null;
+        this.shiftKeyPressed = false;
         
         // Grid settings
         this.gridSize = 20; // pixels per foot
         this.showGrid = true;
+        this.snapToGrid = true;
+        this.snapDistance = 15; // pixels - snap to endpoints within this distance
         
         // Visual settings
         this.colors = {
             grid: '#e5e7eb',
-            wall: '#1f2937',
-            vertex: '#667eea',
-            vertexHover: '#5568d3'
+            wall: '#2c3e50',
+            wallPreview: '#e74c3c',
+            endpoint: '#3498db',
+            selectedWall: '#f39c12',
+            selectedEndpoint: '#e74c3c'
         };
         
-        // NOW it's safe to resize (which calls render)
+        // Resize canvas to fill container
         this.resizeCanvas();
         window.addEventListener('resize', () => this.resizeCanvas());
         
         // Setup event listeners
         this.setupEventListeners();
         
-        // Initial render (optional, already done by resizeCanvas)
-        // this.render();
+        // Initial render
+        this.render();
     }
     
     resizeCanvas() {
@@ -43,10 +49,14 @@ export class FloorPlanEditor {
     }
     
     setupEventListeners() {
-        // Mouse events
-        this.canvas.addEventListener('click', (e) => this.handleClick(e));
-        this.canvas.addEventListener('dblclick', (e) => this.handleDoubleClick(e));
+        // Mouse events for drawing
+        this.canvas.addEventListener('mousedown', (e) => this.handleMouseDown(e));
         this.canvas.addEventListener('mousemove', (e) => this.handleMouseMove(e));
+        this.canvas.addEventListener('mouseup', (e) => this.handleMouseUp(e));
+        
+        // Keyboard events
+        window.addEventListener('keydown', (e) => this.handleKeyDown(e));
+        window.addEventListener('keyup', (e) => this.handleKeyUp(e));
     }
     
     getMousePos(e) {
@@ -54,39 +64,195 @@ export class FloorPlanEditor {
         let x = e.clientX - rect.left;
         let y = e.clientY - rect.top;
         
-        // Snap to grid
-        x = Math.round(x / this.gridSize) * this.gridSize;
-        y = Math.round(y / this.gridSize) * this.gridSize;
+        // Snap to grid if enabled
+        if (this.snapToGrid && !this.shiftKeyPressed) {
+            x = Math.round(x / this.gridSize) * this.gridSize;
+            y = Math.round(y / this.gridSize) * this.gridSize;
+        }
+        
+        // Check for snapping to existing endpoints
+        const snapPoint = this.findSnapPoint(x, y);
+        if (snapPoint) {
+            return snapPoint;
+        }
         
         return { x, y };
     }
     
-    handleClick(e) {
-        if (this.isClosed) return;
-        
-        const pos = this.getMousePos(e);
-        this.vertices.push(pos);
-        this.render();
-        
-        console.log('Added vertex:', pos);
-        console.log('Total vertices:', this.vertices.length);
+    findSnapPoint(x, y) {
+        // Find nearby wall endpoints to snap to
+        for (const wall of this.walls) {
+            // Check start point
+            const distStart = Math.sqrt(
+                Math.pow(wall.startX - x, 2) + Math.pow(wall.startY - y, 2)
+            );
+            if (distStart < this.snapDistance) {
+                return { x: wall.startX, y: wall.startY };
+            }
+            
+            // Check end point
+            const distEnd = Math.sqrt(
+                Math.pow(wall.endX - x, 2) + Math.pow(wall.endY - y, 2)
+            );
+            if (distEnd < this.snapDistance) {
+                return { x: wall.endX, y: wall.endY };
+            }
+        }
+        return null;
     }
     
-    handleDoubleClick(e) {
-        e.preventDefault();
+    handleMouseDown(e) {
+        const pos = this.getMousePos(e);
         
-        if (this.vertices.length >= 3) {
-            this.isClosed = true;
-            console.log('Shape closed with', this.vertices.length, 'vertices');
-            this.render();
-            
-            // Notify that floor plan is ready
-            this.notifyUpdate();
+        if (this.mode === 'draw') {
+            // Start drawing a wall
+            this.currentWall = {
+                startX: pos.x,
+                startY: pos.y,
+                endX: pos.x,
+                endY: pos.y
+            };
+            this.isDrawing = true;
+        } else if (this.mode === 'edit') {
+            // Select a wall
+            this.selectWallAt(pos.x, pos.y);
         }
     }
     
     handleMouseMove(e) {
-        // TODO: Show hover preview in next version
+        if (!this.isDrawing || this.mode !== 'draw' || !this.currentWall) return;
+        
+        let pos = this.getMousePos(e);
+        
+        // If Shift is pressed, constrain to horizontal or vertical
+        if (this.shiftKeyPressed) {
+            const dx = Math.abs(pos.x - this.currentWall.startX);
+            const dy = Math.abs(pos.y - this.currentWall.startY);
+            
+            if (dx > dy) {
+                // More horizontal
+                pos.y = this.currentWall.startY;
+            } else {
+                // More vertical
+                pos.x = this.currentWall.startX;
+            }
+        }
+        
+        // Update the wall endpoint as user drags
+        this.currentWall.endX = pos.x;
+        this.currentWall.endY = pos.y;
+        
+        // Redraw canvas with preview
+        this.render();
+    }
+    
+    handleMouseUp(e) {
+        if (!this.isDrawing || this.mode !== 'draw' || !this.currentWall) return;
+        
+        let pos = this.getMousePos(e);
+        
+        // If Shift is pressed, constrain to horizontal or vertical
+        if (this.shiftKeyPressed) {
+            const dx = Math.abs(pos.x - this.currentWall.startX);
+            const dy = Math.abs(pos.y - this.currentWall.startY);
+            
+            if (dx > dy) {
+                pos.y = this.currentWall.startY;
+            } else {
+                pos.x = this.currentWall.startX;
+            }
+        }
+        
+        // Finalize the wall
+        this.currentWall.endX = pos.x;
+        this.currentWall.endY = pos.y;
+        
+        // Only add wall if it has some length
+        const length = this.calculateWallLength(this.currentWall);
+        if (length > 10) { // Minimum 10 pixels
+            this.walls.push({
+                startX: this.currentWall.startX,
+                startY: this.currentWall.startY,
+                endX: this.currentWall.endX,
+                endY: this.currentWall.endY
+            });
+            
+            console.log('Wall added:', this.walls[this.walls.length - 1]);
+        }
+        
+        this.isDrawing = false;
+        this.currentWall = null;
+        
+        this.render();
+        this.updateMeasurements();
+    }
+    
+    handleKeyDown(e) {
+        if (e.key === 'Shift') {
+            this.shiftKeyPressed = true;
+        }
+        
+        if (e.key === 'Delete' && this.selectedWallIndex !== null) {
+            this.walls.splice(this.selectedWallIndex, 1);
+            this.selectedWallIndex = null;
+            this.render();
+            this.updateMeasurements();
+        }
+    }
+    
+    handleKeyUp(e) {
+        if (e.key === 'Shift') {
+            this.shiftKeyPressed = false;
+        }
+    }
+    
+    selectWallAt(x, y) {
+        // Find wall closest to click point
+        let closestDist = Infinity;
+        let closestIndex = null;
+        
+        this.walls.forEach((wall, index) => {
+            const dist = this.pointToLineDistance(x, y, wall);
+            if (dist < 10 && dist < closestDist) {
+                closestDist = dist;
+                closestIndex = index;
+            }
+        });
+        
+        this.selectedWallIndex = closestIndex;
+        this.render();
+    }
+    
+    pointToLineDistance(px, py, wall) {
+        const { startX, startY, endX, endY } = wall;
+        
+        const A = px - startX;
+        const B = py - startY;
+        const C = endX - startX;
+        const D = endY - startY;
+        
+        const dot = A * C + B * D;
+        const lenSq = C * C + D * D;
+        let param = -1;
+        
+        if (lenSq !== 0) param = dot / lenSq;
+        
+        let xx, yy;
+        
+        if (param < 0) {
+            xx = startX;
+            yy = startY;
+        } else if (param > 1) {
+            xx = endX;
+            yy = endY;
+        } else {
+            xx = startX + param * C;
+            yy = startY + param * D;
+        }
+        
+        const dx = px - xx;
+        const dy = py - yy;
+        return Math.sqrt(dx * dx + dy * dy);
     }
     
     render() {
@@ -102,16 +268,63 @@ export class FloorPlanEditor {
             this.drawGrid();
         }
         
-        // Draw lines between vertices
-        if (this.vertices.length > 0) {
-            this.drawLines();
+        // Draw all completed walls
+        ctx.lineWidth = 3;
+        
+        this.walls.forEach((wall, index) => {
+            const isSelected = index === this.selectedWallIndex;
+            
+            ctx.strokeStyle = isSelected ? this.colors.selectedWall : this.colors.wall;
+            ctx.beginPath();
+            ctx.moveTo(wall.startX, wall.startY);
+            ctx.lineTo(wall.endX, wall.endY);
+            ctx.stroke();
+            
+            // Draw endpoints
+            ctx.fillStyle = isSelected ? this.colors.selectedEndpoint : this.colors.endpoint;
+            ctx.beginPath();
+            ctx.arc(wall.startX, wall.startY, 5, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.arc(wall.endX, wall.endY, 5, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Draw wall length label
+            if (isSelected || this.mode === 'draw') {
+                const midX = (wall.startX + wall.endX) / 2;
+                const midY = (wall.startY + wall.endY) / 2;
+                const length = this.calculateWallLength(wall) / this.gridSize;
+                
+                ctx.fillStyle = '#2c3e50';
+                ctx.font = '12px sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText(`${length.toFixed(1)} ft`, midX, midY - 10);
+            }
+        });
+        
+        // Draw wall being drawn (preview)
+        if (this.isDrawing && this.currentWall) {
+            ctx.strokeStyle = this.colors.wallPreview;
+            ctx.lineWidth = 3;
+            ctx.setLineDash([5, 5]); // Dashed line for preview
+            
+            ctx.beginPath();
+            ctx.moveTo(this.currentWall.startX, this.currentWall.startY);
+            ctx.lineTo(this.currentWall.endX, this.currentWall.endY);
+            ctx.stroke();
+            
+            ctx.setLineDash([]); // Reset to solid lines
+            
+            // Show length of wall being drawn
+            const midX = (this.currentWall.startX + this.currentWall.endX) / 2;
+            const midY = (this.currentWall.startY + this.currentWall.endY) / 2;
+            const length = this.calculateWallLength(this.currentWall) / this.gridSize;
+            
+            ctx.fillStyle = this.colors.wallPreview;
+            ctx.font = 'bold 14px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText(`${length.toFixed(1)} ft`, midX, midY - 10);
         }
-        
-        // Draw vertices (dots)
-        this.drawVertices();
-        
-        // Update measurements
-        this.updateMeasurements();
     }
     
     drawGrid() {
@@ -139,114 +352,54 @@ export class FloorPlanEditor {
         }
     }
     
-    drawLines() {
-        const ctx = this.ctx;
-        
-        if (this.isClosed) {
-            // Fill the floor area
-            ctx.fillStyle = 'rgba(102, 126, 234, 0.1)';
-            ctx.beginPath();
-            ctx.moveTo(this.vertices[0].x, this.vertices[0].y);
-            for (let i = 1; i < this.vertices.length; i++) {
-                ctx.lineTo(this.vertices[i].x, this.vertices[i].y);
-            }
-            ctx.closePath();
-            ctx.fill();
-        }
-        
-        // Draw wall lines
-        ctx.strokeStyle = this.colors.wall;
-        ctx.lineWidth = 3;
-        
-        ctx.beginPath();
-        ctx.moveTo(this.vertices[0].x, this.vertices[0].y);
-        
-        for (let i = 1; i < this.vertices.length; i++) {
-            ctx.lineTo(this.vertices[i].x, this.vertices[i].y);
-        }
-        
-        if (this.isClosed) {
-            ctx.closePath();
-        }
-        
-        ctx.stroke();
-    }
-    
-    drawVertices() {
-        const ctx = this.ctx;
-        
-        for (let i = 0; i < this.vertices.length; i++) {
-            const v = this.vertices[i];
-            
-            ctx.fillStyle = this.colors.vertex;
-            ctx.beginPath();
-            ctx.arc(v.x, v.y, 6, 0, Math.PI * 2);
-            ctx.fill();
-            
-            // Draw vertex number
-            ctx.fillStyle = '#1f2937';
-            ctx.font = '12px sans-serif';
-            ctx.fillText(`${i + 1}`, v.x + 10, v.y - 10);
-        }
+    calculateWallLength(wall) {
+        const dx = wall.endX - wall.startX;
+        const dy = wall.endY - wall.startY;
+        return Math.sqrt(dx * dx + dy * dy);
     }
     
     updateMeasurements() {
-        const display = document.getElementById('measurement-display');
-        if (!display) return;
+        const wallCountDisplay = document.getElementById('wall-count');
+        const totalLengthDisplay = document.getElementById('total-length');
         
-        if (this.vertices.length === 0) {
-            display.textContent = 'Click to start drawing';
-            return;
+        if (wallCountDisplay) {
+            wallCountDisplay.textContent = this.walls.length;
         }
         
-        if (this.vertices.length < 3) {
-            display.textContent = `${this.vertices.length} points placed. Need ${3 - this.vertices.length} more to close.`;
-            return;
+        if (totalLengthDisplay) {
+            const totalLength = this.walls.reduce((sum, wall) => {
+                return sum + this.calculateWallLength(wall);
+            }, 0);
+            const totalLengthFeet = totalLength / this.gridSize;
+            totalLengthDisplay.textContent = totalLengthFeet.toFixed(1);
         }
-        
-        const area = this.calculateArea();
-        display.textContent = `Area: ${area.toFixed(0)} sq ft | ${this.vertices.length} corners`;
-    }
-    
-    calculateArea() {
-        if (this.vertices.length < 3) return 0;
-        
-        let area = 0;
-        for (let i = 0; i < this.vertices.length; i++) {
-            const j = (i + 1) % this.vertices.length;
-            area += this.vertices[i].x * this.vertices[j].y;
-            area -= this.vertices[j].x * this.vertices[i].y;
-        }
-        area = Math.abs(area / 2);
-        
-        // Convert pixels to square feet
-        const sqFeet = area / (this.gridSize * this.gridSize);
-        return sqFeet;
     }
     
     clear() {
-        this.vertices = [];
-        this.isClosed = false;
+        this.walls = [];
+        this.currentWall = null;
+        this.isDrawing = false;
+        this.selectedWallIndex = null;
         this.render();
+        this.updateMeasurements();
     }
-
+    
     undo() {
-        if (this.vertices.length > 0) {
-            // If shape was closed, reopen it first
-            if (this.isClosed) {
-                this.isClosed = false;
-            }
-            
-            this.vertices.pop();
+        if (this.walls.length > 0) {
+            this.walls.pop();
+            this.selectedWallIndex = null;
             this.render();
-            console.log('Undo - removed last vertex. Total:', this.vertices.length);
+            this.updateMeasurements();
+            console.log('Undo - removed last wall. Total walls:', this.walls.length);
         }
     }
-
+    
     setMode(mode) {
         this.mode = mode;
+        this.selectedWallIndex = null;
         console.log('Mode changed to:', mode);
         
+        // Update mode buttons visual state
         document.querySelectorAll('.mode-btn').forEach(btn => {
             btn.classList.remove('active');
         });
@@ -256,37 +409,40 @@ export class FloorPlanEditor {
             activeBtn.classList.add('active');
         }
         
+        // Update cursor based on mode
         if (mode === 'draw') {
             this.canvas.style.cursor = 'crosshair';
         } else if (mode === 'edit') {
-            this.canvas.style.cursor = 'move';
-        } else if (mode === 'door' || mode === 'window') {
             this.canvas.style.cursor = 'pointer';
+        } else if (mode === 'door' || mode === 'window') {
+            this.canvas.style.cursor = 'crosshair';
         }
+        
+        this.render();
     }
     
     getFloorPlanData() {
         // Convert canvas coordinates to real-world coordinates (feet)
-        const realVertices = this.vertices.map(v => ({
-            x: v.x / this.gridSize,
-            y: v.y / this.gridSize
+        const wallsInFeet = this.walls.map(wall => ({
+            start: {
+                x: wall.startX / this.gridSize,
+                y: wall.startY / this.gridSize
+            },
+            end: {
+                x: wall.endX / this.gridSize,
+                y: wall.endY / this.gridSize
+            }
         }));
         
+        const totalLength = this.walls.reduce((sum, wall) => {
+            return sum + this.calculateWallLength(wall);
+        }, 0) / this.gridSize;
+        
         return {
-            vertices: realVertices,
-            area: this.calculateArea(),
-            isClosed: this.isClosed
+            walls: wallsInFeet,
+            wallCount: this.walls.length,
+            totalLength: totalLength,
+            gridSize: this.gridSize
         };
     }
-    
-    notifyUpdate() {
-        // Dispatch custom event that 3D viewer can listen to
-        const event = new CustomEvent('floorplan-updated', {
-            detail: this.getFloorPlanData()
-        });
-        document.dispatchEvent(event);
-        
-        console.log('Floor plan updated:', this.getFloorPlanData());
-    }
 }
-

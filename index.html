@@ -18,7 +18,7 @@
   <!-- Top Control Bar -->
   <div class="control-bar">
     <div class="control-section">
-      <h1>Floor Plan Designer</h1>
+      <h1>2D Floor Plan Designer</h1>
     </div>
     
     <div class="control-section">
@@ -29,13 +29,6 @@
     </div>
     
     <div class="control-section">
-      <label>Stories:</label>
-      <select id="num-stories">
-        <option value="1" selected>1</option>
-        <option value="2">2</option>
-        <option value="3">3</option>
-      </select>
-      
       <label>Wall Material:</label>
       <select id="wall-material">
         <option value="brick">Brick</option>
@@ -43,22 +36,6 @@
         <option value="stucco">Stucco</option>
         <option value="stone">Stone</option>
         <option value="vinyl-siding">Vinyl Siding</option>
-      </select>
-      
-      <label>Roof Style:</label>
-      <select id="roof-style">
-        <option value="gable" selected>Gable</option>
-        <option value="hip">Hip</option>
-        <option value="flat">Flat</option>
-      </select>
-      
-      <label>Roof Material:</label>
-      <select id="roof-material">
-        <option value="asphalt-shingle" selected>Asphalt Shingle</option>
-        <option value="metal">Metal</option>
-        <option value="clay-tile">Clay Tile</option>
-        <option value="slate">Slate</option>
-        <option value="wood-shake">Wood Shake</option>
       </select>
     </div>
     
@@ -69,34 +46,12 @@
     </div>
   </div>
 
-  <!-- Split Screen Container -->
-  <div class="split-container">
-    <!-- Left: 2D Drawing Canvas -->
-    <div class="canvas-2d-container">
-      <canvas id="floor-plan-canvas"></canvas>
-      <div class="canvas-info">
-        <p>Click to place wall corners. Double-click to close shape.</p>
-        <p id="measurement-display">Click to start drawing</p>
-      </div>
-    </div>
-    
-    <!-- Right: 3D View -->
-    <div class="canvas-3d-container">
-      <canvas id="three-canvas"></canvas>
-      
-      <!-- View Controls -->
-      <div class="view-controls">
-        <button class="view-btn" data-view="corner">Corner View</button>
-        <button class="view-btn" data-view="front">Front View</button>
-        <button class="view-btn" data-view="side">Side View</button>
-        <button class="view-btn" data-view="top">Top View</button>
-      </div>
-      
-      <!-- Info Panel -->
-      <div id="info-panel" class="info-panel">
-        <h3>Design Info</h3>
-        <div id="info-content"></div>
-      </div>
+  <!-- 2D Canvas Container -->
+  <div class="canvas-container">
+    <canvas id="floor-plan-canvas"></canvas>
+    <div class="canvas-info">
+      <p>Click and drag to draw walls. Hold Shift for straight lines. Press Delete to remove selected wall.</p>
+      <p>Walls: <span id="wall-count">0</span> | Total Length: <span id="total-length">0</span> ft</p>
     </div>
   </div>
 
