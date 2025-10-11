@@ -372,6 +372,28 @@ class HomeDesigner {
         `;
     }
 
+    getWallMaterial() {
+        const selectedMaterial = document.getElementById('wall-material')?.value || 'wood-siding';
+        const materialProps = this.materials.wall[selectedMaterial] || this.materials.wall['wood-siding'];
+        
+        return new THREE.MeshStandardMaterial({
+            color: materialProps.color,
+            roughness: materialProps.roughness,
+            metalness: materialProps.metalness
+        });
+    }
+
+    getRoofMaterial() {
+        const selectedMaterial = document.getElementById('roof-material')?.value || 'asphalt-shingle';
+        const materialProps = this.materials.roof[selectedMaterial] || this.materials.roof['asphalt-shingle'];
+        
+        return new THREE.MeshStandardMaterial({
+            color: materialProps.color,
+            roughness: materialProps.roughness,
+            metalness: materialProps.metalness
+        });
+    }
+
     buildHouseByShape(width, depth, storyHeight, totalHeight) {
         switch (this.params.houseShape) {
             case 'rectangle':
