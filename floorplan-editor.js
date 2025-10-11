@@ -595,6 +595,11 @@ export class FloorPlanEditor {
         }
         
         this.render();
+        
+        // Trigger 3D update
+        if (window.floorPlanApp) {
+            window.floorPlanApp.update3DModel();
+        }
     }
     
     handleKeyDown(e) {
@@ -639,6 +644,11 @@ export class FloorPlanEditor {
                 this.render();
                 this.updateMeasurements();
                 console.log('Patio deleted');
+            }
+            
+            // Trigger 3D update after deletion
+            if (window.floorPlanApp) {
+                window.floorPlanApp.update3DModel();
             }
         }
     }

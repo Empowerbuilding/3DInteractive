@@ -1,28 +1,36 @@
-// 2D Floor Plan Designer Application
-// Simplified version - 2D drawing only, no 3D visualization
+// 2D Floor Plan Designer Application + 3D Viewer
+// Integrated dual-view system
 
 import { FloorPlanEditor } from './floorplan-editor.js';
+import { ThreeJSGenerator } from './threejs-generator.js';
 
 class FloorPlanApp {
     constructor() {
-        console.log('🏗️ Initializing 2D Floor Plan Designer...');
+        console.log('🏗️ Initializing 2D Floor Plan Designer + 3D Viewer...');
         
         // Initialize 2D floor plan editor
         this.floorPlanEditor = new FloorPlanEditor('floor-plan-canvas');
         console.log('✅ Floor Plan Editor initialized');
         
-        // Floor plan updates happen automatically through the editor
+        // Initialize 3D generator
+        this.threejsGenerator = new ThreeJSGenerator('three-canvas');
+        console.log('✅ Three.js Generator initialized');
         
         // Setup event listeners
         this.setupEventListeners();
+        
+        // Initial 3D generation
+        this.update3DModel();
     }
 
     setupEventListeners() {
+        // 2D CONTROLS
+        
         // Clear Plan button
         document.getElementById('clear-plan')?.addEventListener('click', () => {
             if (this.floorPlanEditor) {
                 this.floorPlanEditor.clear();
-                console.log('Floor plan cleared');
+                this.update3DModel();
             }
         });
         
@@ -30,7 +38,7 @@ class FloorPlanApp {
         document.getElementById('undo')?.addEventListener('click', () => {
             if (this.floorPlanEditor) {
                 this.floorPlanEditor.undo();
-                console.log('Undo last point');
+                this.update3DModel();
             }
         });
         
@@ -69,6 +77,7 @@ class FloorPlanApp {
         document.getElementById('add-floor')?.addEventListener('click', () => {
             if (this.floorPlanEditor) {
                 this.floorPlanEditor.addFloor();
+                this.update3DModel();
             }
         });
         
@@ -88,6 +97,40 @@ class FloorPlanApp {
         document.getElementById('export-design')?.addEventListener('click', () => {
             this.exportDesign();
         });
+        
+        // 3D CONTROLS
+        
+        // Wall Height Slider
+        document.getElementById('wall-height')?.addEventListener('input', (e) => {
+            const value = parseFloat(e.target.value);
+            document.getElementById('wall-height-value').textContent = `${value}ft`;
+            if (this.threejsGenerator) {
+                this.threejsGenerator.setWallHeight(value);
+                this.update3DModel();
+            }
+        });
+        
+        // Show Roof Checkbox
+        document.getElementById('show-roof')?.addEventListener('change', (e) => {
+            if (this.threejsGenerator) {
+                this.threejsGenerator.setShowRoof(e.target.checked);
+                this.update3DModel();
+            }
+        });
+        
+        // Manual Regenerate Button
+        document.getElementById('regenerate-3d')?.addEventListener('click', () => {
+            this.update3DModel();
+        });
+    }
+    
+    update3DModel() {
+        if (!this.floorPlanEditor || !this.threejsGenerator) {
+            return;
+        }
+        
+        const floorplanData = this.floorPlanEditor.getFloorPlanData();
+        this.threejsGenerator.generate3DFromFloorplan(floorplanData);
     }
     
     exportDesign() {
@@ -100,9 +143,14 @@ class FloorPlanApp {
         
         // Create export data
         const exportData = {
-            version: '3.0-Multi-Floor',
+            version: '3.0-Multi-Floor-With-3D',
             created: new Date().toISOString(),
-            floors: floorPlanData.floors
+            floors: floorPlanData.floors,
+            settings: {
+                gridSize: floorPlanData.gridSize,
+                wallHeight: this.threejsGenerator.wallHeight,
+                showRoof: this.threejsGenerator.showRoof
+            }
         };
         
         // Download as JSON
@@ -112,13 +160,12 @@ class FloorPlanApp {
         
         const link = document.createElement('a');
         link.href = url;
-        link.download = `floor-plan-${Date.now()}.json`;
+        link.download = `floor-plan-3d-${Date.now()}.json`;
         link.click();
         
         URL.revokeObjectURL(url);
         console.log('✅ Floor plan exported successfully');
         
-        // Calculate totals for alert
         const totalWalls = floorPlanData.floors.reduce((sum, floor) => sum + floor.walls.length, 0);
         const totalDoors = floorPlanData.floors.reduce((sum, floor) => sum + floor.doors.length, 0);
         const totalWindows = floorPlanData.floors.reduce((sum, floor) => sum + floor.windows.length, 0);
@@ -128,8 +175,8 @@ class FloorPlanApp {
 
 // Wait for DOM to be fully loaded before initializing
 document.addEventListener('DOMContentLoaded', () => {
-    console.log('DOM loaded, initializing Floor Plan Designer...');
-    const app = new FloorPlanApp();
-    window.floorPlanApp = app;
-    console.log('✅ Floor Plan Designer initialized successfully');
+    console.log('DOM loaded, initializing Floor Plan Designer + 3D Viewer...');
+    const floorPlanApp = new FloorPlanApp();
+    window.floorPlanApp = floorPlanApp;
+    console.log('✅ Application initialized successfully');
 });
