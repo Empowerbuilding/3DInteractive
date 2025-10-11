@@ -184,6 +184,7 @@ export class ThreeJSGenerator {
         // Generate roof
         if (this.showRoof && floorplanData.floors.length > 0) {
             this.generateRoof(floorplanData, gridSize, feetToMeters);
+            this.generateGableEndWalls(floorplanData, gridSize, feetToMeters);
         }
         
         // Update stats
@@ -558,6 +559,101 @@ export class ThreeJSGenerator {
             roofMesh.userData.isBuilding = true;
             this.scene.add(roofMesh);
         }
+    }
+    
+    generateGableEndWalls(floorplanData, gridSize, feetToMeters) {
+        if (this.roofStyle !== 'gable') return;
+        
+        const topFloor = floorplanData.floors[floorplanData.floors.length - 1];
+        const roofY = (floorplanData.floors.length - 1) * this.wallHeight * feetToMeters + this.wallHeight * feetToMeters;
+        
+        // Calculate bounding box to determine ridge orientation
+        let minX = Infinity, maxX = -Infinity, minZ = Infinity, maxZ = -Infinity;
+        topFloor.walls.forEach(wall => {
+            const x1 = (wall.startX / gridSize) * feetToMeters;
+            const z1 = (wall.startY / gridSize) * feetToMeters;
+            const x2 = (wall.endX / gridSize) * feetToMeters;
+            const z2 = (wall.endY / gridSize) * feetToMeters;
+            minX = Math.min(minX, x1, x2);
+            maxX = Math.max(maxX, x1, x2);
+            minZ = Math.min(minZ, z1, z2);
+            maxZ = Math.max(maxZ, z1, z2);
+        });
+        
+        const overhangMeters = this.roofOverhang * feetToMeters;
+        const roofWidth = (maxX - minX) + (2 * overhangMeters);
+        const roofDepth = (maxZ - minZ) + (2 * overhangMeters);
+        const roofHeight = (Math.max(roofWidth, roofDepth) / 2) * (this.roofPitch / 12);
+        
+        // Determine ridge orientation
+        const ridgeAlongX = roofWidth > roofDepth;
+        
+        // For each wall, check if it's a gable end wall
+        topFloor.walls.forEach((wall, wallIndex) => {
+            const startX = (wall.startX / gridSize) * feetToMeters;
+            const startZ = (wall.startY / gridSize) * feetToMeters;
+            const endX = (wall.endX / gridSize) * feetToMeters;
+            const endZ = (wall.endY / gridSize) * feetToMeters;
+            
+            const dx = endX - startX;
+            const dz = endZ - startZ;
+            const length = Math.sqrt(dx * dx + dz * dz);
+            const angle = Math.atan2(dz, dx);
+            
+            // Determine if this wall is perpendicular to the ridge
+            const isGableEnd = ridgeAlongX ? 
+                (Math.abs(Math.cos(angle)) < 0.1) :  // Wall is mostly vertical (parallel to Z)
+                (Math.abs(Math.sin(angle)) < 0.1);   // Wall is mostly horizontal (parallel to X)
+            
+            if (!isGableEnd) return;
+            
+            // Calculate the center position of the gable wall
+            const centerX = (startX + endX) / 2;
+            const centerZ = (startZ + endZ) / 2;
+            
+            // Determine distance from center for height calculation
+            const distanceFromCenter = ridgeAlongX ? 
+                Math.abs(centerZ - (minZ + maxZ) / 2) : 
+                Math.abs(centerX - (minX + maxX) / 2);
+            
+            const buildingHalfSpan = ridgeAlongX ? 
+                (maxZ - minZ) / 2 : 
+                (maxX - minX) / 2;
+            
+            // Calculate triangle height at this wall position
+            const triangleHeight = roofHeight * (1 - (distanceFromCenter / buildingHalfSpan));
+            
+            if (triangleHeight <= 0) return;
+            
+            // Create triangular gable wall geometry
+            const geometry = new THREE.BufferGeometry();
+            const halfLength = length / 2;
+            
+            // Triangle vertices: bottom-left, bottom-right, top-center
+            const vertices = new Float32Array([
+                // Front face
+                -halfLength, 0, 0,
+                halfLength, 0, 0,
+                0, triangleHeight, 0,
+                
+                // Back face (for double-sided appearance)
+                -halfLength, 0, 0,
+                0, triangleHeight, 0,
+                halfLength, 0, 0
+            ]);
+            
+            geometry.setAttribute('position', new THREE.BufferAttribute(vertices, 3));
+            geometry.computeVertexNormals();
+            
+            const gableMesh = new THREE.Mesh(geometry, this.materials.wall);
+            gableMesh.position.set(centerX, roofY, centerZ);
+            gableMesh.rotation.y = angle;
+            gableMesh.castShadow = true;
+            gableMesh.receiveShadow = true;
+            gableMesh.userData.isBuilding = true;
+            
+            this.scene.add(gableMesh);
+        });
     }
     
     clearBuilding() {
