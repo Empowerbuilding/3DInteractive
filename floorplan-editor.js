@@ -170,6 +170,11 @@ export class FloorPlanEditor {
     }
     
     handleMouseDown(e) {
+        // Don't do anything in view mode
+        if (this.mode === 'view') {
+            return;
+        }
+        
         const pos = this.getMousePos(e);
         
         if (this.mode === 'draw') {
@@ -1402,19 +1407,23 @@ export class FloorPlanEditor {
     }
     
     setMode(mode) {
-        this.mode = mode;
-        this.selectedWallIndex = null;
-        console.log('Mode changed to:', mode);
+        // Valid modes: 'draw', 'edit', 'door', 'window', 'patio', 'view'
+        const validModes = ['draw', 'edit', 'door', 'window', 'patio', 'view'];
         
-        // Update mode buttons visual state
-        document.querySelectorAll('.mode-btn').forEach(btn => {
-            btn.classList.remove('active');
-        });
-        
-        const activeBtn = document.getElementById(`mode-${mode}`);
-        if (activeBtn) {
-            activeBtn.classList.add('active');
+        if (!validModes.includes(mode)) {
+            console.warn('Invalid mode:', mode);
+            return;
         }
+        
+        this.mode = mode;
+        
+        // Clear all selections when changing modes
+        this.selectedWallIndex = null;
+        this.selectedDoor = null;
+        this.selectedWindow = null;
+        this.selectedPatio = null;
+        
+        console.log('Mode changed to:', mode);
         
         // Update cursor based on mode
         if (mode === 'draw') {
@@ -1423,6 +1432,8 @@ export class FloorPlanEditor {
             this.canvas.style.cursor = 'pointer';
         } else if (mode === 'door' || mode === 'window' || mode === 'patio') {
             this.canvas.style.cursor = 'crosshair';
+        } else if (mode === 'view') {
+            this.canvas.style.cursor = 'default';
         }
         
         this.render();

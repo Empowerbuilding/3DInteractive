@@ -42,36 +42,8 @@ class FloorPlanApp {
             }
         });
         
-        // Mode buttons
-        document.getElementById('mode-draw')?.addEventListener('click', () => {
-            if (this.floorPlanEditor) {
-                this.floorPlanEditor.setMode('draw');
-            }
-        });
-        
-        document.getElementById('mode-edit')?.addEventListener('click', () => {
-            if (this.floorPlanEditor) {
-                this.floorPlanEditor.setMode('edit');
-            }
-        });
-        
-        document.getElementById('mode-door')?.addEventListener('click', () => {
-            if (this.floorPlanEditor) {
-                this.floorPlanEditor.setMode('door');
-            }
-        });
-        
-        document.getElementById('mode-window')?.addEventListener('click', () => {
-            if (this.floorPlanEditor) {
-                this.floorPlanEditor.setMode('window');
-            }
-        });
-        
-        document.getElementById('mode-patio')?.addEventListener('click', () => {
-            if (this.floorPlanEditor) {
-                this.floorPlanEditor.setMode('patio');
-            }
-        });
+        // Set up mode buttons with exclusive selection
+        this.setupModeButtons();
         
         // Floor management
         document.getElementById('add-floor')?.addEventListener('click', () => {
@@ -156,6 +128,65 @@ class FloorPlanApp {
             const sidebar = document.getElementById('sidebar');
             sidebar?.classList.toggle('collapsed');
         });
+    }
+    
+    setupModeButtons() {
+        const modeButtons = {
+            'mode-draw': 'draw',
+            'mode-edit': 'edit',
+            'mode-door': 'door',
+            'mode-window': 'window',
+            'mode-patio': 'patio'
+        };
+
+        // Function to update active button state
+        const setActiveMode = (activeButtonId) => {
+            // Remove active class from all buttons
+            Object.keys(modeButtons).forEach(buttonId => {
+                const btn = document.getElementById(buttonId);
+                if (btn) {
+                    btn.classList.remove('active');
+                }
+            });
+
+            // If activeButtonId is provided, set it as active
+            if (activeButtonId) {
+                const activeBtn = document.getElementById(activeButtonId);
+                if (activeBtn) {
+                    activeBtn.classList.add('active');
+                }
+            }
+        };
+
+        // Set up click handlers for each mode button
+        Object.keys(modeButtons).forEach(buttonId => {
+            const button = document.getElementById(buttonId);
+            const mode = modeButtons[buttonId];
+
+            if (button) {
+                button.addEventListener('click', () => {
+                    // If clicking the already-active button, deselect it
+                    if (button.classList.contains('active')) {
+                        setActiveMode(null);  // Deselect all
+                        if (this.floorPlanEditor) {
+                            this.floorPlanEditor.setMode('view');  // Set to neutral view mode
+                        }
+                    } else {
+                        // Activate this button and deactivate others
+                        setActiveMode(buttonId);
+                        if (this.floorPlanEditor) {
+                            this.floorPlanEditor.setMode(mode);
+                        }
+                    }
+                });
+            }
+        });
+
+        // Set default mode to 'draw' on startup
+        setActiveMode('mode-draw');
+        if (this.floorPlanEditor) {
+            this.floorPlanEditor.setMode('draw');
+        }
     }
     
     update3DModel() {
