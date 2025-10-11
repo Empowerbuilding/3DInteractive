@@ -601,9 +601,11 @@ export class ThreeJSGenerator {
             const angle = Math.atan2(dz, dx);
             
             // Determine if this wall is perpendicular to the ridge
+            // If ridge runs along X, gable ends are on walls perpendicular to X (parallel to Z axis)
+            // If ridge runs along Z, gable ends are on walls perpendicular to Z (parallel to X axis)
             const isGableEnd = ridgeAlongX ? 
-                (Math.abs(Math.cos(angle)) < 0.1) :  // Wall is mostly vertical (parallel to Z)
-                (Math.abs(Math.sin(angle)) < 0.1);   // Wall is mostly horizontal (parallel to X)
+                (Math.abs(Math.sin(angle)) < 0.1) :   // Wall is mostly horizontal (perpendicular to ridge along X)
+                (Math.abs(Math.cos(angle)) < 0.1);    // Wall is mostly vertical (perpendicular to ridge along Z)
             
             if (!isGableEnd) return;
             
