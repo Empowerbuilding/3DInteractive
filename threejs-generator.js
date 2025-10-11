@@ -539,7 +539,11 @@ export class ThreeJSGenerator {
                 geometry.setAttribute('position', new THREE.BufferAttribute(vertices, 3));
                 geometry.computeVertexNormals();
                 
-                roofMesh = new THREE.Mesh(geometry, this.materials.roof);
+                // Create double-sided material for gable roof to prevent disappearing when viewed from above
+                const gableRoofMaterial = this.materials.roof.clone();
+                gableRoofMaterial.side = THREE.DoubleSide;
+                
+                roofMesh = new THREE.Mesh(geometry, gableRoofMaterial);
                 roofMesh.position.set(centerX, roofY, centerZ);
                 
             } else {
@@ -578,7 +582,11 @@ export class ThreeJSGenerator {
                 geometry.setAttribute('position', new THREE.BufferAttribute(vertices, 3));
                 geometry.computeVertexNormals();
                 
-                roofMesh = new THREE.Mesh(geometry, this.materials.roof);
+                // Create double-sided material for gable roof to prevent disappearing when viewed from above
+                const gableRoofMaterial = this.materials.roof.clone();
+                gableRoofMaterial.side = THREE.DoubleSide;
+                
+                roofMesh = new THREE.Mesh(geometry, gableRoofMaterial);
                 roofMesh.position.set(centerX, roofY, centerZ);
             }
         }
