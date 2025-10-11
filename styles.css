@@ -230,17 +230,19 @@ button {
     top: 0;
     left: var(--sidebar-width);
     right: 0;
-    height: var(--toolbar-height);
+    min-height: var(--toolbar-height);
+    height: auto;  /* Allow height to grow */
     background: var(--surface);
     border-bottom: 2px solid var(--border);
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 0 24px;
+    padding: 12px 24px;  /* Add vertical padding */
     box-shadow: var(--shadow-sm);
     z-index: 150;
     gap: 20px;
     transition: left 0.3s ease;
+    overflow: visible;
 }
 
 /* When sidebar is collapsed, toolbar extends full width */
@@ -264,8 +266,10 @@ button {
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 24px;
+    gap: 12px;  /* Reduced gap */
     flex-wrap: wrap;
+    min-width: 0;  /* Allow shrinking */
+    padding: 8px 0;  /* Add some vertical padding */
 }
 
 .toolbar-right {
@@ -276,15 +280,17 @@ button {
 .control-group {
     display: flex;
     align-items: center;
-    gap: 8px;
-    padding: 8px 16px;
+    gap: 6px;  /* Reduced from 8px */
+    padding: 6px 12px;  /* Reduced padding */
     background: #f9fafb;
     border-radius: 8px;
     border: 1px solid var(--border);
+    white-space: nowrap;
+    flex-shrink: 0;
 }
 
 .group-label {
-    font-size: 12px;
+    font-size: 10px;  /* Reduced from 12px */
     font-weight: 700;
     color: var(--primary-color);
     text-transform: uppercase;
@@ -294,8 +300,8 @@ button {
 .checkbox-inline {
     display: flex;
     align-items: center;
-    gap: 6px;
-    font-size: 13px;
+    gap: 4px;  /* Reduced from 6px */
+    font-size: 12px;  /* Reduced from 13px */
     font-weight: 500;
     color: var(--text-primary);
     cursor: pointer;
@@ -310,21 +316,23 @@ button {
 .slider-label {
     display: flex;
     align-items: center;
-    gap: 8px;
-    font-size: 13px;
+    gap: 6px;
+    font-size: 12px;  /* Reduced from 13px */
     font-weight: 500;
     color: var(--text-secondary);
+    white-space: nowrap;
 }
 
 .value-display {
     font-weight: 700;
     color: var(--primary-color);
-    min-width: 50px;
+    min-width: 45px;  /* Reduced from 50px */
     text-align: right;
+    font-size: 12px;
 }
 
 .slider {
-    width: 100px;
+    width: 80px;  /* Reduced from 100px */
     height: 6px;
     border-radius: 3px;
     background: var(--border);
@@ -333,9 +341,9 @@ button {
 }
 
 .compact-select {
-    padding: 6px 10px;
-    font-size: 13px;
-    min-width: 120px;
+    padding: 6px 8px;  /* Reduced padding */
+    font-size: 12px;  /* Reduced font size */
+    min-width: 100px;  /* Reduced from 120px */
 }
 
 /* ==================== MAIN CONTENT ==================== */
@@ -348,10 +356,24 @@ button {
     display: flex;
     flex-direction: column;
     transition: left 0.3s ease;
+    padding-top: 0;  /* Remove extra padding */
 }
 
 .sidebar.collapsed ~ .top-toolbar ~ .main-content {
     left: 0;
+}
+
+/* Add padding to account for wrapped toolbar */
+@media (max-width: 1440px) {
+    .main-content {
+        top: calc(var(--toolbar-height) + 20px);  /* Add extra space */
+    }
+}
+
+@media (max-width: 1280px) {
+    .main-content {
+        top: calc(var(--toolbar-height) + 40px);  /* More space for wrapping */
+    }
 }
 
 .split-container {
@@ -490,6 +512,33 @@ button {
 
 .icon-btn:hover {
     background: rgba(255,255,255,0.3);
+}
+
+/* ==================== ADDITIONAL RESPONSIVE ==================== */
+@media (max-width: 1440px) {
+    .toolbar-center {
+        gap: 8px;
+    }
+    
+    .control-group {
+        padding: 5px 10px;
+        gap: 4px;
+    }
+}
+
+@media (max-width: 1280px) {
+    .app-title {
+        font-size: 16px;
+    }
+    
+    .toolbar-center {
+        gap: 6px;
+    }
+    
+    .btn-primary {
+        padding: 8px 12px;
+        font-size: 13px;
+    }
 }
 
 /* ==================== RESPONSIVE ==================== */
