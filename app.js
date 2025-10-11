@@ -44,10 +44,10 @@ class HomeDesigner {
         this.floorPlanEditor = new FloorPlanEditor('floor-plan-canvas');
         console.log('Floor Plan Editor initialized');
 
-        // Listen for floor plan updates
+        // Listen for floor plan updates from 2D canvas
         document.addEventListener('floorplan-updated', (e) => {
             console.log('Floor plan updated event received:', e.detail);
-            // TODO: Will connect to 3D in next step
+            this.buildHomeFromFloorPlan(e.detail);
         });
 
         // Material definitions with realistic properties
@@ -196,6 +196,180 @@ class HomeDesigner {
 
         // Build all doors based on selections
         this.buildAllDoors(widthMeters, depthMeters, storyHeightMeters);
+    }
+
+    buildHomeFromFloorPlan(floorPlanData) {
+        console.log('🏗️ Building 3D model from floor plan:', floorPlanData);
+        
+        if (!floorPlanData.isClosed || floorPlanData.vertices.length < 3) {
+            console.log('⚠️ Floor plan not ready - needs at least 3 vertices and must be closed');
+            return;
+        }
+        
+        // Clear existing house
+        if (this.house) {
+            this.scene.remove(this.house);
+            this.house = null;
+        }
+        
+        const FEET_TO_METERS = 0.3048;
+        const STORY_HEIGHT = 3; // meters per story
+        const WALL_THICKNESS = 0.3; // meters
+        
+        this.house = new THREE.Group();
+        
+        // Create 2D shape from vertices
+        const shape = new THREE.Shape();
+        
+        // Convert vertices to Three.js coordinates (flip Y axis for 3D)
+        const vertices = floorPlanData.vertices.map(v => ({
+            x: (v.x * FEET_TO_METERS),
+            y: (v.y * FEET_TO_METERS)
+        }));
+        
+        // Move to first vertex
+        shape.moveTo(vertices[0].x, vertices[0].y);
+        
+        // Draw lines to other vertices
+        for (let i = 1; i < vertices.length; i++) {
+            shape.lineTo(vertices[i].x, vertices[i].y);
+        }
+        
+        // Close the path
+        shape.closePath();
+        
+        // Get number of stories from dropdown
+        const numStories = parseInt(document.getElementById('num-stories')?.value || 1);
+        
+        // Create walls for each story
+        const extrudeSettings = {
+            depth: WALL_THICKNESS,
+            bevelEnabled: false
+        };
+        
+        const wallGeometry = new THREE.ExtrudeGeometry(shape, extrudeSettings);
+        const wallMaterial = this.getWallMaterial();
+        
+        for (let story = 0; story < numStories; story++) {
+            // Create walls
+            const storyWalls = new THREE.Mesh(wallGeometry.clone(), wallMaterial);
+            storyWalls.rotation.x = -Math.PI / 2; // Rotate to stand upright
+            storyWalls.position.y = story * STORY_HEIGHT;
+            this.house.add(storyWalls);
+            
+            // Create floor
+            const floorGeometry = new THREE.ShapeGeometry(shape);
+            const floorMaterial = new THREE.MeshStandardMaterial({
+                color: 0xD3D3D3,
+                roughness: 0.8,
+                metalness: 0.0
+            });
+            const floor = new THREE.Mesh(floorGeometry, floorMaterial);
+            floor.rotation.x = -Math.PI / 2;
+            floor.position.y = story * STORY_HEIGHT;
+            this.house.add(floor);
+        }
+        
+        // Add roof
+        this.addRoofToCustomShape(shape, vertices, numStories * STORY_HEIGHT);
+        
+        // Add house to scene
+        this.scene.add(this.house);
+        
+        // Center camera on the new house
+        this.centerCameraOnHouse(vertices);
+        
+        // Update info panel
+        this.updateInfoPanelFromFloorPlan(floorPlanData, numStories);
+        
+        console.log('✅ 3D model built successfully!');
+    }
+
+    addRoofToCustomShape(shape, vertices, baseHeight) {
+        const roofStyle = document.getElementById('roof-style')?.value || 'gable';
+        const roofMaterial = this.getRoofMaterial();
+        const ROOF_HEIGHT = 3; // meters
+        
+        // Calculate bounding box of shape
+        let minX = Infinity, maxX = -Infinity;
+        let minY = Infinity, maxY = -Infinity;
+        
+        vertices.forEach(v => {
+            minX = Math.min(minX, v.x);
+            maxX = Math.max(maxX, v.x);
+            minY = Math.min(minY, v.y);
+            maxY = Math.max(maxY, v.y);
+        });
+        
+        const width = maxX - minX;
+        const depth = maxY - minY;
+        const centerX = (minX + maxX) / 2;
+        const centerY = (minY + maxY) / 2;
+        
+        if (roofStyle === 'flat') {
+            // Flat roof - just a plane on top
+            const roofGeometry = new THREE.ShapeGeometry(shape);
+            const roof = new THREE.Mesh(roofGeometry, roofMaterial);
+            roof.rotation.x = -Math.PI / 2;
+            roof.position.y = baseHeight + 0.3;
+            this.house.add(roof);
+        } else if (roofStyle === 'gable') {
+            // Gable roof - triangular
+            const roofShape = new THREE.Shape();
+            roofShape.moveTo(minX, 0);
+            roofShape.lineTo(centerX, ROOF_HEIGHT);
+            roofShape.lineTo(maxX, 0);
+            roofShape.lineTo(minX, 0);
+            
+            const extrudeSettings = {
+                depth: depth,
+                bevelEnabled: false
+            };
+            
+            const roofGeometry = new THREE.ExtrudeGeometry(roofShape, extrudeSettings);
+            const roof = new THREE.Mesh(roofGeometry, roofMaterial);
+            roof.rotation.x = -Math.PI / 2;
+            roof.position.set(0, baseHeight, minY);
+            this.house.add(roof);
+        } else if (roofStyle === 'hip') {
+            // Hip roof - pyramid-like
+            const roofGeometry = new THREE.ConeGeometry(Math.max(width, depth) / 2, ROOF_HEIGHT, 4);
+            const roof = new THREE.Mesh(roofGeometry, roofMaterial);
+            roof.position.set(centerX, baseHeight + ROOF_HEIGHT / 2, centerY);
+            roof.rotation.y = Math.PI / 4;
+            this.house.add(roof);
+        }
+    }
+
+    centerCameraOnHouse(vertices) {
+        // Calculate center of house
+        let sumX = 0, sumY = 0;
+        vertices.forEach(v => {
+            sumX += v.x;
+            sumY += v.y;
+        });
+        const centerX = sumX / vertices.length;
+        const centerY = sumY / vertices.length;
+        
+        // Update camera to look at the house center
+        this.controls.target.set(centerX, 5, centerY);
+        this.camera.position.set(centerX + 20, 15, centerY + 20);
+        this.controls.update();
+    }
+
+    updateInfoPanelFromFloorPlan(floorPlanData, numStories) {
+        const infoContent = document.getElementById('info-content');
+        if (!infoContent) return;
+        
+        const area = Math.round(floorPlanData.area);
+        const totalSqFt = area * numStories;
+        
+        infoContent.innerHTML = `
+            <p><strong>Area per Floor:</strong> ${area.toLocaleString()} sq ft</p>
+            <p><strong>Total Area:</strong> ${totalSqFt.toLocaleString()} sq ft</p>
+            <p><strong>Stories:</strong> ${numStories}</p>
+            <p><strong>Corners:</strong> ${floorPlanData.vertices.length}</p>
+        `;
     }
 
     buildHouseByShape(width, depth, storyHeight, totalHeight) {
@@ -1466,23 +1640,23 @@ class HomeDesigner {
 
     setupEventListeners() {
         // Update Design button
-        document.getElementById('update-design').addEventListener('click', () => {
+        document.getElementById('update-design')?.addEventListener('click', () => {
             this.updateDesignFromForm();
         });
 
         // Generate AI Images button
-        document.getElementById('generate-ai-images').addEventListener('click', async () => {
+        document.getElementById('generate-ai-images')?.addEventListener('click', async () => {
             await this.generateAIImages();
         });
 
         // Export Data button
-        document.getElementById('export-data').addEventListener('click', () => {
+        document.getElementById('export-data')?.addEventListener('click', () => {
             this.exportData();
         });
 
         // Real-time updates on form changes
         const form = document.getElementById('design-form');
-        form.addEventListener('input', (e) => {
+        form?.addEventListener('input', (e) => {
             // Update info panel in real-time
             const width = parseInt(document.getElementById('house-width').value);
             const depth = parseInt(document.getElementById('house-depth').value);
@@ -1551,11 +1725,40 @@ class HomeDesigner {
                 this.floorPlanEditor.setMode('window');
             }
         });
+
+        // Material changes should rebuild the house
+        document.getElementById('wall-material')?.addEventListener('change', () => {
+            if (this.floorPlanEditor && this.floorPlanEditor.isClosed) {
+                const floorPlanData = this.floorPlanEditor.getFloorPlanData();
+                this.buildHomeFromFloorPlan(floorPlanData);
+            }
+        });
+
+        document.getElementById('roof-style')?.addEventListener('change', () => {
+            if (this.floorPlanEditor && this.floorPlanEditor.isClosed) {
+                const floorPlanData = this.floorPlanEditor.getFloorPlanData();
+                this.buildHomeFromFloorPlan(floorPlanData);
+            }
+        });
+
+        document.getElementById('roof-material')?.addEventListener('change', () => {
+            if (this.floorPlanEditor && this.floorPlanEditor.isClosed) {
+                const floorPlanData = this.floorPlanEditor.getFloorPlanData();
+                this.buildHomeFromFloorPlan(floorPlanData);
+            }
+        });
+
+        document.getElementById('num-stories')?.addEventListener('change', () => {
+            if (this.floorPlanEditor && this.floorPlanEditor.isClosed) {
+                const floorPlanData = this.floorPlanEditor.getFloorPlanData();
+                this.buildHomeFromFloorPlan(floorPlanData);
+            }
+        });
     }
 
     setupViewControls() {
         // Corner View (default)
-        document.getElementById('cornerView').addEventListener('click', () => {
+        document.getElementById('cornerView')?.addEventListener('click', () => {
             this.setActiveView('cornerView');
             this.animateCamera(
                 new THREE.Vector3(50, 30, 50),
@@ -1564,7 +1767,7 @@ class HomeDesigner {
         });
 
         // Front View
-        document.getElementById('frontView').addEventListener('click', () => {
+        document.getElementById('frontView')?.addEventListener('click', () => {
             this.setActiveView('frontView');
             this.animateCamera(
                 new THREE.Vector3(0, 15, 60),
@@ -1573,7 +1776,7 @@ class HomeDesigner {
         });
 
         // Side View
-        document.getElementById('sideView').addEventListener('click', () => {
+        document.getElementById('sideView')?.addEventListener('click', () => {
             this.setActiveView('sideView');
             this.animateCamera(
                 new THREE.Vector3(60, 15, 0),
@@ -1582,12 +1785,30 @@ class HomeDesigner {
         });
 
         // Top View
-        document.getElementById('topView').addEventListener('click', () => {
+        document.getElementById('topView')?.addEventListener('click', () => {
             this.setActiveView('topView');
             this.animateCamera(
                 new THREE.Vector3(0, 80, 0),
                 new THREE.Vector3(0, 0, 0)
             );
+        });
+
+        // New HTML structure with data-view attributes
+        document.querySelectorAll('.view-btn[data-view]').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const view = e.target.dataset.view;
+                this.setActiveViewNew(view);
+                
+                if (view === 'corner') {
+                    this.animateCamera(new THREE.Vector3(50, 30, 50), new THREE.Vector3(0, 10, 0));
+                } else if (view === 'front') {
+                    this.animateCamera(new THREE.Vector3(0, 15, 60), new THREE.Vector3(0, 10, 0));
+                } else if (view === 'side') {
+                    this.animateCamera(new THREE.Vector3(60, 15, 0), new THREE.Vector3(0, 10, 0));
+                } else if (view === 'top') {
+                    this.animateCamera(new THREE.Vector3(0, 80, 0), new THREE.Vector3(0, 0, 0));
+                }
+            });
         });
     }
 
@@ -1595,7 +1816,14 @@ class HomeDesigner {
         document.querySelectorAll('.view-btn').forEach(btn => {
             btn.classList.remove('active');
         });
-        document.getElementById(viewId).classList.add('active');
+        document.getElementById(viewId)?.classList.add('active');
+    }
+
+    setActiveViewNew(viewName) {
+        document.querySelectorAll('.view-btn').forEach(btn => {
+            btn.classList.remove('active');
+        });
+        document.querySelector(`.view-btn[data-view="${viewName}"]`)?.classList.add('active');
     }
 
     animateCamera(targetPosition, targetLookAt, duration = 1000) {
@@ -1658,10 +1886,17 @@ class HomeDesigner {
     }
 
     updateInfoPanel() {
-        document.getElementById('info-width').textContent = `${this.params.houseWidth} ft`;
-        document.getElementById('info-depth').textContent = `${this.params.houseDepth} ft`;
-        document.getElementById('info-stories').textContent = this.params.numStories;
-        document.getElementById('info-windows').textContent = this.params.numWindows;
+        // Old info panel structure (with specific IDs)
+        const infoWidth = document.getElementById('info-width');
+        const infoDepth = document.getElementById('info-depth');
+        const infoStories = document.getElementById('info-stories');
+        const infoWindows = document.getElementById('info-windows');
+        const infoSqft = document.getElementById('info-sqft');
+        
+        if (infoWidth) infoWidth.textContent = `${this.params.houseWidth} ft`;
+        if (infoDepth) infoDepth.textContent = `${this.params.houseDepth} ft`;
+        if (infoStories) infoStories.textContent = this.params.numStories;
+        if (infoWindows) infoWindows.textContent = this.params.numWindows;
         
         // Calculate house square footage based on shape
         let sqft = this.calculateShapeSquareFootage();
@@ -1673,7 +1908,18 @@ class HomeDesigner {
             sqft += garageWidth * garageDepth;
         }
         
-        document.getElementById('info-sqft').textContent = `${sqft.toLocaleString()} sq ft`;
+        if (infoSqft) infoSqft.textContent = `${sqft.toLocaleString()} sq ft`;
+        
+        // New info panel structure (single content div)
+        const infoContent = document.getElementById('info-content');
+        if (infoContent) {
+            infoContent.innerHTML = `
+                <p><strong>Width:</strong> ${this.params.houseWidth} ft</p>
+                <p><strong>Depth:</strong> ${this.params.houseDepth} ft</p>
+                <p><strong>Stories:</strong> ${this.params.numStories}</p>
+                <p><strong>Square Footage:</strong> ${sqft.toLocaleString()} sq ft</p>
+            `;
+        }
     }
 
     calculateShapeSquareFootage() {

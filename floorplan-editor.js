@@ -6,11 +6,7 @@ export class FloorPlanEditor {
         this.canvas = document.getElementById(canvasId);
         this.ctx = this.canvas.getContext('2d');
         
-        // Resize canvas to fill container
-        this.resizeCanvas();
-        window.addEventListener('resize', () => this.resizeCanvas());
-        
-        // Drawing state
+        // Drawing state - MUST BE INITIALIZED FIRST!
         this.vertices = []; // Array of {x, y} points
         this.isDrawing = false;
         this.isClosed = false;
@@ -28,11 +24,15 @@ export class FloorPlanEditor {
             vertexHover: '#5568d3'
         };
         
+        // NOW it's safe to resize (which calls render)
+        this.resizeCanvas();
+        window.addEventListener('resize', () => this.resizeCanvas());
+        
         // Setup event listeners
         this.setupEventListeners();
         
-        // Initial render
-        this.render();
+        // Initial render (optional, already done by resizeCanvas)
+        // this.render();
     }
     
     resizeCanvas() {
