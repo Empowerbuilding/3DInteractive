@@ -1,6 +1,7 @@
 // 3D Home Designer Application
 // Uses Three.js ES6 modules
 
+import { FloorPlanEditor } from './floorplan-editor.js';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
@@ -39,6 +40,16 @@ class HomeDesigner {
             garageType: 'none'
         };
 
+        // Initialize 2D floor plan editor
+        this.floorPlanEditor = new FloorPlanEditor('floor-plan-canvas');
+        console.log('Floor Plan Editor initialized');
+
+        // Listen for floor plan updates
+        document.addEventListener('floorplan-updated', (e) => {
+            console.log('Floor plan updated event received:', e.detail);
+            // TODO: Will connect to 3D in next step
+        });
+
         // Material definitions with realistic properties
         this.materials = {
             wall: {
@@ -66,7 +77,7 @@ class HomeDesigner {
     }
 
     initScene() {
-        const container = document.getElementById('canvas-container');
+        const container = document.querySelector('.canvas-3d-container');
         const canvas = document.getElementById('three-canvas');
 
         // Create Scene
@@ -1499,6 +1510,47 @@ class HomeDesigner {
             
             document.getElementById('info-sqft').textContent = `${totalSqft.toLocaleString()} sq ft`;
         });
+
+        // Clear Plan button
+        document.getElementById('clear-plan')?.addEventListener('click', () => {
+            if (this.floorPlanEditor) {
+                this.floorPlanEditor.clear();
+                console.log('Floor plan cleared');
+            }
+        });
+
+        // Undo button
+        document.getElementById('undo')?.addEventListener('click', () => {
+            if (this.floorPlanEditor) {
+                this.floorPlanEditor.undo();
+                console.log('Undo last point');
+            }
+        });
+
+        // Mode buttons
+        document.getElementById('mode-draw')?.addEventListener('click', () => {
+            if (this.floorPlanEditor) {
+                this.floorPlanEditor.setMode('draw');
+            }
+        });
+
+        document.getElementById('mode-edit')?.addEventListener('click', () => {
+            if (this.floorPlanEditor) {
+                this.floorPlanEditor.setMode('edit');
+            }
+        });
+
+        document.getElementById('mode-door')?.addEventListener('click', () => {
+            if (this.floorPlanEditor) {
+                this.floorPlanEditor.setMode('door');
+            }
+        });
+
+        document.getElementById('mode-window')?.addEventListener('click', () => {
+            if (this.floorPlanEditor) {
+                this.floorPlanEditor.setMode('window');
+            }
+        });
     }
 
     setupViewControls() {
@@ -2270,7 +2322,7 @@ class HomeDesigner {
     }
 
     onWindowResize() {
-        const container = document.getElementById('canvas-container');
+        const container = document.querySelector('.canvas-3d-container');
         this.camera.aspect = container.clientWidth / container.clientHeight;
         this.camera.updateProjectionMatrix();
         this.renderer.setSize(container.clientWidth, container.clientHeight);

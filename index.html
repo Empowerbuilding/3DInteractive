@@ -15,253 +15,92 @@
     </script>
 </head>
 <body>
-    <div class="container">
-        <!-- Left Sidebar -->
-        <aside class="sidebar">
-            <h1>3D Home Designer</h1>
-            
-            <form id="design-form">
-                <div class="form-group">
-                    <label for="house-width">House Width (feet)</label>
-                    <input 
-                        type="number" 
-                        id="house-width" 
-                        name="houseWidth"
-                        min="20" 
-                        max="100" 
-                        value="40"
-                        step="1"
-                    >
-                </div>
-
-                <div class="form-group">
-                    <label for="house-depth">House Depth (feet)</label>
-                    <input 
-                        type="number" 
-                        id="house-depth" 
-                        name="houseDepth"
-                        min="20" 
-                        max="80" 
-                        value="30"
-                        step="1"
-                    >
-                </div>
-
-                <div class="form-group">
-                    <label for="num-stories">Number of Stories</label>
-                    <select id="num-stories" name="numStories">
-                        <option value="1" selected>1</option>
-                        <option value="2">2</option>
-                        <option value="3">3</option>
-                    </select>
-                </div>
-
-                <div class="form-group">
-                    <label for="house-shape">House Shape</label>
-                    <select id="house-shape" name="houseShape">
-                        <option value="rectangle" selected>Simple Rectangle</option>
-                        <option value="l-shape">L-Shape</option>
-                        <option value="t-shape">T-Shape</option>
-                        <option value="u-shape">U-Shape</option>
-                        <option value="with-wings">Center with Wings</option>
-                        <option value="courtyard">Courtyard Style</option>
-                    </select>
-                </div>
-
-                <div class="form-group">
-                    <label for="roof-style">Roof Style</label>
-                    <select id="roof-style" name="roofStyle">
-                        <option value="gable" selected>Gable</option>
-                        <option value="hip">Hip</option>
-                        <option value="flat">Flat</option>
-                    </select>
-                </div>
-
-                <div class="form-group">
-                    <label for="front-door-position">Front Door Position</label>
-                    <select id="front-door-position" name="frontDoorPosition">
-                        <option value="center" selected>Center</option>
-                        <option value="left">Left Side</option>
-                        <option value="right">Right Side</option>
-                        <option value="none">None</option>
-                    </select>
-                </div>
-
-                <div class="form-group">
-                    <label for="front-door-type">Front Door Type</label>
-                    <select id="front-door-type" name="frontDoorType">
-                        <option value="single" selected>Single Door</option>
-                        <option value="double">Double Door</option>
-                        <option value="glass">Glass Panel Door</option>
-                    </select>
-                </div>
-
-                <div class="form-group">
-                    <label for="left-side-door">Side Door - Left</label>
-                    <select id="left-side-door" name="leftSideDoor">
-                        <option value="none" selected>None</option>
-                        <option value="single">Single Door</option>
-                        <option value="double">Double Door</option>
-                        <option value="sliding">Sliding Glass</option>
-                    </select>
-                </div>
-
-                <div class="form-group">
-                    <label for="right-side-door">Side Door - Right</label>
-                    <select id="right-side-door" name="rightSideDoor">
-                        <option value="none" selected>None</option>
-                        <option value="single">Single Door</option>
-                        <option value="double">Double Door</option>
-                        <option value="sliding">Sliding Glass</option>
-                    </select>
-                </div>
-
-                <div class="form-group">
-                    <label for="back-door">Back Door</label>
-                    <select id="back-door" name="backDoor">
-                        <option value="none" selected>None</option>
-                        <option value="single-center">Single (Center)</option>
-                        <option value="single-left">Single (Left)</option>
-                        <option value="single-right">Single (Right)</option>
-                        <option value="double">Double Door (Center)</option>
-                        <option value="sliding">Sliding Glass (Center)</option>
-                        <option value="french">French Doors (Center)</option>
-                    </select>
-                </div>
-
-                <div class="form-group checkbox-group">
-                    <label>
-                        <input type="checkbox" id="garage-entry-door" name="garageEntryDoor" checked>
-                        <span style="font-size: 0.875rem;">Garage Entry Door</span>
-                    </label>
-                </div>
-
-                <div class="form-group">
-                    <label for="wall-material">Wall Material</label>
-                    <select id="wall-material" name="wallMaterial">
-                        <option value="brick">Brick</option>
-                        <option value="wood-siding" selected>Wood Siding</option>
-                        <option value="stucco">Stucco</option>
-                        <option value="stone">Stone</option>
-                        <option value="vinyl-siding">Vinyl Siding</option>
-                    </select>
-                </div>
-
-                <div class="form-group">
-                    <label for="roof-material">Roof Material</label>
-                    <select id="roof-material" name="roofMaterial">
-                        <option value="asphalt-shingle" selected>Asphalt Shingle</option>
-                        <option value="metal">Metal</option>
-                        <option value="clay-tile">Clay Tile</option>
-                        <option value="slate">Slate</option>
-                        <option value="wood-shake">Wood Shake</option>
-                    </select>
-                </div>
-
-                <div class="form-group">
-                    <label for="num-windows">Number of Windows</label>
-                    <input 
-                        type="range" 
-                        id="num-windows" 
-                        name="numWindows"
-                        min="4" 
-                        max="16" 
-                        value="8"
-                        step="1"
-                    >
-                    <span id="num-windows-value">8</span>
-                </div>
-
-                <div class="form-group">
-                    <label for="front-porch">Front Porch</label>
-                    <select id="front-porch" name="frontPorch">
-                        <option value="none" selected>None</option>
-                        <option value="small">Small</option>
-                        <option value="large">Large</option>
-                    </select>
-                </div>
-
-                <div class="form-group">
-                    <label for="back-porch">Back Porch/Deck</label>
-                    <select id="back-porch" name="backPorch">
-                        <option value="none" selected>None</option>
-                        <option value="small">Small Deck</option>
-                        <option value="large">Large Deck</option>
-                        <option value="screened">Screened Porch</option>
-                    </select>
-                </div>
-
-                <div class="form-group checkbox-group">
-                    <label>
-                        <input type="checkbox" id="add-chimney" name="addChimney">
-                        Add Chimney
-                    </label>
-                </div>
-
-                <div class="form-group">
-                    <label for="garage-type">Garage Type</label>
-                    <select id="garage-type" name="garageType">
-                        <option value="none" selected>None</option>
-                        <option value="single">Single</option>
-                        <option value="double">Double</option>
-                    </select>
-                </div>
-
-                <div class="button-group">
-                    <button type="button" id="update-design" class="btn-primary">
-                        Update Design
-                    </button>
-                    <button type="button" id="generate-ai-images" class="btn-ai">
-                        🎨 Generate Photorealistic Images
-                    </button>
-                    <button type="button" id="export-data" class="btn-secondary">
-                        Export Data
-                    </button>
-                </div>
-            </form>
-        </aside>
-
-        <!-- Main Canvas Area -->
-        <main class="canvas-area" id="canvas-container">
-            <!-- Info Panel -->
-            <div class="info-panel">
-                <div class="info-row">
-                    <span class="info-label">Width:</span>
-                    <span class="info-value" id="info-width">40 ft</span>
-                </div>
-                <div class="info-row">
-                    <span class="info-label">Depth:</span>
-                    <span class="info-value" id="info-depth">30 ft</span>
-                </div>
-                <div class="info-row">
-                    <span class="info-label">Square Footage:</span>
-                    <span class="info-value" id="info-sqft">1,200 sq ft</span>
-                </div>
-                <div class="info-row">
-                    <span class="info-label">Stories:</span>
-                    <span class="info-value" id="info-stories">1</span>
-                </div>
-                <div class="info-row">
-                    <span class="info-label">Windows:</span>
-                    <span class="info-value" id="info-windows">8</span>
-                </div>
-            </div>
-
-            <!-- Three.js Canvas -->
-            <canvas id="three-canvas"></canvas>
-            
-            <!-- View Controls -->
-            <div id="view-controls">
-                <div style="font-weight: bold; margin-bottom: 10px; font-size: 14px;">Camera View</div>
-                <button class="view-btn active" id="cornerView">Corner View</button>
-                <button class="view-btn" id="frontView">Front View</button>
-                <button class="view-btn" id="sideView">Side View</button>
-                <button class="view-btn" id="topView">Top View</button>
-            </div>
-        </main>
+  <!-- Top Control Bar -->
+  <div class="control-bar">
+    <div class="control-section">
+      <h1>Floor Plan Designer</h1>
     </div>
+    
+    <div class="control-section">
+      <button id="mode-draw" class="mode-btn active">Draw Walls</button>
+      <button id="mode-edit" class="mode-btn">Edit</button>
+      <button id="mode-door" class="mode-btn">Add Doors</button>
+      <button id="mode-window" class="mode-btn">Add Windows</button>
+    </div>
+    
+    <div class="control-section">
+      <label>Stories:</label>
+      <select id="num-stories">
+        <option value="1" selected>1</option>
+        <option value="2">2</option>
+        <option value="3">3</option>
+      </select>
+      
+      <label>Wall Material:</label>
+      <select id="wall-material">
+        <option value="brick">Brick</option>
+        <option value="wood-siding" selected>Wood Siding</option>
+        <option value="stucco">Stucco</option>
+        <option value="stone">Stone</option>
+        <option value="vinyl-siding">Vinyl Siding</option>
+      </select>
+      
+      <label>Roof Style:</label>
+      <select id="roof-style">
+        <option value="gable" selected>Gable</option>
+        <option value="hip">Hip</option>
+        <option value="flat">Flat</option>
+      </select>
+      
+      <label>Roof Material:</label>
+      <select id="roof-material">
+        <option value="asphalt-shingle" selected>Asphalt Shingle</option>
+        <option value="metal">Metal</option>
+        <option value="clay-tile">Clay Tile</option>
+        <option value="slate">Slate</option>
+        <option value="wood-shake">Wood Shake</option>
+      </select>
+    </div>
+    
+    <div class="control-section">
+      <button id="clear-plan">Clear Plan</button>
+      <button id="undo">Undo</button>
+      <button id="export-design">Export Design</button>
+    </div>
+  </div>
 
-    <!-- Application Script -->
-    <script type="module" src="app.js"></script>
+  <!-- Split Screen Container -->
+  <div class="split-container">
+    <!-- Left: 2D Drawing Canvas -->
+    <div class="canvas-2d-container">
+      <canvas id="floor-plan-canvas"></canvas>
+      <div class="canvas-info">
+        <p>Click to place wall corners. Double-click to close shape.</p>
+        <p id="measurement-display">Click to start drawing</p>
+      </div>
+    </div>
+    
+    <!-- Right: 3D View -->
+    <div class="canvas-3d-container">
+      <canvas id="three-canvas"></canvas>
+      
+      <!-- View Controls -->
+      <div class="view-controls">
+        <button class="view-btn" data-view="corner">Corner View</button>
+        <button class="view-btn" data-view="front">Front View</button>
+        <button class="view-btn" data-view="side">Side View</button>
+        <button class="view-btn" data-view="top">Top View</button>
+      </div>
+      
+      <!-- Info Panel -->
+      <div id="info-panel" class="info-panel">
+        <h3>Design Info</h3>
+        <div id="info-content"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Application Script -->
+  <script type="module" src="app.js"></script>
 </body>
 </html>
