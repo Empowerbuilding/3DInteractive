@@ -458,15 +458,45 @@ export class ThreeJSGenerator {
             roofMesh.position.set(centerX, roofY + 0.15, centerZ);
             
         } else if (this.roofStyle === 'hip') {
-            // Hip roof - pyramid shape (4-sided)
-            const roofGeometry = new THREE.ConeGeometry(
-                Math.sqrt(roofWidth * roofWidth + roofDepth * roofDepth) / 2,
-                roofHeight,
-                4
-            );
-            roofMesh = new THREE.Mesh(roofGeometry, this.materials.roof);
-            roofMesh.position.set(centerX, roofY + roofHeight / 2, centerZ);
-            roofMesh.rotation.y = Math.PI / 4;
+            // Hip roof - rectangular pyramid (4-sided)
+            const geometry = new THREE.BufferGeometry();
+            
+            // Create vertices for a rectangular pyramid
+            // Base corners at roofY, apex at roofY + roofHeight
+            const halfWidth = roofWidth / 2;
+            const halfDepth = roofDepth / 2;
+            
+            const vertices = new Float32Array([
+                // Front face (facing -Z)
+                -halfWidth, 0, -halfDepth,  // bottom left
+                halfWidth, 0, -halfDepth,   // bottom right
+                0, roofHeight, 0,            // apex
+                
+                // Right face (facing +X)
+                halfWidth, 0, -halfDepth,   // bottom front
+                halfWidth, 0, halfDepth,    // bottom back
+                0, roofHeight, 0,            // apex
+                
+                // Back face (facing +Z)
+                halfWidth, 0, halfDepth,    // bottom right
+                -halfWidth, 0, halfDepth,   // bottom left
+                0, roofHeight, 0,            // apex
+                
+                // Left face (facing -X)
+                -halfWidth, 0, halfDepth,   // bottom back
+                -halfWidth, 0, -halfDepth,  // bottom front
+                0, roofHeight, 0             // apex
+            ]);
+            
+            geometry.setAttribute('position', new THREE.BufferAttribute(vertices, 3));
+            geometry.computeVertexNormals();
+            
+            // Create double-sided material for hip roof to prevent disappearing when viewed from above
+            const hipRoofMaterial = this.materials.roof.clone();
+            hipRoofMaterial.side = THREE.DoubleSide;
+            
+            roofMesh = new THREE.Mesh(geometry, hipRoofMaterial);
+            roofMesh.position.set(centerX, roofY, centerZ);
             
         } else if (this.roofStyle === 'gable') {
             // Gable roof - triangular ends

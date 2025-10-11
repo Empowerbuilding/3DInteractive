@@ -150,6 +150,12 @@ class FloorPlanApp {
         document.getElementById('regenerate-3d')?.addEventListener('click', () => {
             this.update3DModel();
         });
+        
+        // Sidebar toggle
+        document.getElementById('sidebar-toggle')?.addEventListener('click', () => {
+            const sidebar = document.getElementById('sidebar');
+            sidebar?.classList.toggle('collapsed');
+        });
     }
     
     update3DModel() {

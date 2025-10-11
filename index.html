@@ -15,112 +15,184 @@
     </script>
 </head>
 <body>
-  <!-- Top Control Bar -->
-  <div class="control-bar">
-    <div class="control-section">
-      <h1>2D Floor Plan to 3D Model</h1>
+  <!-- LEFT SIDEBAR - 2D Floor Plan Tools -->
+  <div class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <h2>2D Floor Plan</h2>
+      <button id="sidebar-toggle" class="icon-btn" title="Toggle Sidebar">
+        ☰
+      </button>
     </div>
-    
-    <div class="control-section">
-      <button id="mode-draw" class="mode-btn active">Draw Walls</button>
-      <button id="mode-edit" class="mode-btn">Edit</button>
-      <button id="mode-door" class="mode-btn">Add Doors</button>
-      <button id="mode-window" class="mode-btn">Add Windows</button>
-      <button id="mode-patio" class="mode-btn">Add Patio</button>
+
+    <!-- Drawing Tools Section -->
+    <div class="sidebar-section">
+      <h3 class="section-title">Drawing Tools</h3>
+      <div class="tool-grid">
+        <button id="mode-draw" class="tool-btn active" title="Draw Walls">
+          <span class="tool-icon">✏️</span>
+          <span class="tool-label">Draw Walls</span>
+        </button>
+        <button id="mode-edit" class="tool-btn" title="Edit">
+          <span class="tool-icon">✂️</span>
+          <span class="tool-label">Edit</span>
+        </button>
+        <button id="mode-door" class="tool-btn" title="Add Doors">
+          <span class="tool-icon">🚪</span>
+          <span class="tool-label">Doors</span>
+        </button>
+        <button id="mode-window" class="tool-btn" title="Add Windows">
+          <span class="tool-icon">🪟</span>
+          <span class="tool-label">Windows</span>
+        </button>
+        <button id="mode-patio" class="tool-btn" title="Add Patio">
+          <span class="tool-icon">🏡</span>
+          <span class="tool-label">Patio</span>
+        </button>
+      </div>
     </div>
-    
-    <div class="control-section">
-      <label>Current Floor:</label>
-      <select id="floor-selector">
-        <option value="0" selected>Floor 1</option>
-      </select>
-      <button id="add-floor" class="btn-secondary">+ Add Floor</button>
-      <label>
+
+    <!-- Floor Management Section -->
+    <div class="sidebar-section">
+      <h3 class="section-title">Floor Management</h3>
+      <div class="input-group">
+        <label>Current Floor:</label>
+        <select id="floor-selector">
+          <option value="0" selected>Floor 1</option>
+        </select>
+      </div>
+      <button id="add-floor" class="btn-secondary full-width">+ Add Floor</button>
+      <label class="checkbox-label">
         <input type="checkbox" id="show-floor-overlay" checked>
-        Show Floor Below
+        <span>Show Floor Below</span>
       </label>
     </div>
-    
-    <div class="control-section">
-      <label>Door Style:</label>
-      <select id="door-style">
-        <option value="swing" selected>Swing Door (3')</option>
-        <option value="pocket">Pocket Door (3')</option>
-        <option value="bifold">Bifold Door (4')</option>
-        <option value="double">Double Door (6')</option>
-      </select>
+
+    <!-- Door Style Section -->
+    <div class="sidebar-section">
+      <h3 class="section-title">Door Style</h3>
+      <div class="input-group">
+        <select id="door-style">
+          <option value="swing" selected>Swing Door (3')</option>
+          <option value="pocket">Pocket Door (3')</option>
+          <option value="bifold">Bifold Door (4')</option>
+          <option value="double">Double Door (6')</option>
+        </select>
+      </div>
     </div>
-    
-    <!-- NEW 3D CONTROLS -->
-    <div class="control-section-3d">
-      <label>Wall Height:</label>
-      <input type="range" id="wall-height" min="8" max="12" step="0.5" value="8">
-      <span id="wall-height-value">8ft</span>
-    </div>
-    
-    <div class="control-section-3d">
-      <label>
-        <input type="checkbox" id="show-roof" checked>
-        Show Roof
-      </label>
-    </div>
-    
-    <!-- Roof Style Controls -->
-    <div class="control-section-3d">
-      <label>Roof Style:</label>
-      <select id="roof-style">
-        <option value="hip" selected>Hip Roof</option>
-        <option value="gable">Gable Roof</option>
-        <option value="flat">Flat Roof</option>
-      </select>
-    </div>
-    
-    <div class="control-section-3d">
-      <label>Roof Pitch:</label>
-      <input type="range" id="roof-pitch" min="4" max="12" step="1" value="6">
-      <span id="roof-pitch-value">6:12</span>
-    </div>
-    
-    <div class="control-section-3d">
-      <label>Overhang:</label>
-      <input type="range" id="roof-overhang" min="0" max="3" step="0.5" value="1">
-      <span id="roof-overhang-value">1.0 ft</span>
-    </div>
-    
-    <div class="control-section">
-      <button id="clear-plan">Clear Plan</button>
-      <button id="undo">Undo</button>
-      <button id="export-design">Export Design</button>
-      <button id="regenerate-3d" class="btn-primary">🔄 Update 3D</button>
+
+    <!-- Actions Section -->
+    <div class="sidebar-section">
+      <h3 class="section-title">Actions</h3>
+      <button id="clear-plan" class="btn-danger full-width">Clear Plan</button>
+      <button id="undo" class="btn-secondary full-width">Undo</button>
+      <button id="export-design" class="btn-secondary full-width">Export Design</button>
     </div>
   </div>
 
-  <!-- SPLIT VIEW CONTAINER -->
-  <div class="split-container">
-    <!-- LEFT: 2D Canvas -->
-    <div class="canvas-container-2d">
-      <canvas id="floor-plan-canvas"></canvas>
-      <div class="canvas-info">
-        <p>Draw mode: Drag to draw walls. Edit mode: Select and drag items.</p>
-        <p>Walls: <span id="wall-count">0</span> | Length: <span id="total-length">0</span> ft</p>
+  <!-- MAIN CONTENT AREA WITH SIDEBAR -->
+  <div class="main-content">
+    <!-- TOP TOOLBAR - 3D Controls & Global Settings -->
+    <div class="top-toolbar">
+      <div class="toolbar-left">
+        <h1 class="app-title">Floor Plan to 3D</h1>
+      </div>
+
+      <div class="toolbar-center">
+        <!-- 3D View Controls Group -->
+        <div class="control-group">
+          <span class="group-label">3D View</span>
+          <label class="checkbox-inline">
+            <input type="checkbox" id="show-roof" checked>
+            <span>Show Roof</span>
+          </label>
+        </div>
+
+        <!-- Wall Height Control -->
+        <div class="control-group">
+          <label class="slider-label">
+            <span>Wall Height:</span>
+            <span id="wall-height-value" class="value-display">8ft</span>
+          </label>
+          <input type="range" id="wall-height" min="8" max="12" step="0.5" value="8" class="slider">
+        </div>
+
+        <!-- Roof Style Dropdown -->
+        <div class="control-group">
+          <label>Roof Style:</label>
+          <select id="roof-style" class="compact-select">
+            <option value="hip" selected>Hip Roof</option>
+            <option value="gable">Gable Roof</option>
+            <option value="flat">Flat Roof</option>
+          </select>
+        </div>
+
+        <!-- Roof Pitch Slider -->
+        <div class="control-group">
+          <label class="slider-label">
+            <span>Pitch:</span>
+            <span id="roof-pitch-value" class="value-display">6:12</span>
+          </label>
+          <input type="range" id="roof-pitch" min="4" max="12" step="1" value="6" class="slider">
+        </div>
+
+        <!-- Overhang Slider -->
+        <div class="control-group">
+          <label class="slider-label">
+            <span>Overhang:</span>
+            <span id="roof-overhang-value" class="value-display">1.0 ft</span>
+          </label>
+          <input type="range" id="roof-overhang" min="0" max="3" step="0.5" value="1" class="slider">
+        </div>
+      </div>
+
+      <div class="toolbar-right">
+        <button id="regenerate-3d" class="btn-primary">
+          <span>🔄</span>
+          <span>Update 3D</span>
+        </button>
       </div>
     </div>
 
-    <!-- RIGHT: 3D Viewer -->
-    <div class="canvas-container-3d">
-      <canvas id="three-canvas"></canvas>
-      <div class="canvas-info-3d">
-        <p><strong>3D View Controls:</strong></p>
-        <p>• Left Click + Drag: Rotate</p>
-        <p>• Right Click + Drag: Pan</p>
-        <p>• Scroll: Zoom</p>
+    <!-- SPLIT VIEW CONTAINER -->
+    <div class="split-container">
+      <!-- LEFT: 2D Canvas -->
+      <div class="canvas-container-2d">
+        <canvas id="floor-plan-canvas"></canvas>
+        <div class="canvas-info">
+          <p>📏 Walls: <span id="wall-count">0</span> | Length: <span id="total-length">0</span> ft</p>
+        </div>
       </div>
-      <div class="stats-panel">
-        <p><strong>Model Stats:</strong></p>
-        <p>Floors: <span id="stat-floors">1</span></p>
-        <p>Total Walls: <span id="stat-walls">0</span></p>
-        <p>Total Doors: <span id="stat-doors">0</span></p>
-        <p>Total Windows: <span id="stat-windows">0</span></p>
+
+      <!-- RIGHT: 3D Viewer -->
+      <div class="canvas-container-3d">
+        <canvas id="three-canvas"></canvas>
+        <div class="canvas-info-3d">
+          <div class="info-title">🎮 3D Controls</div>
+          <ul class="control-list">
+            <li>Left Click + Drag: Rotate</li>
+            <li>Right Click + Drag: Pan</li>
+            <li>Scroll: Zoom</li>
+          </ul>
+        </div>
+        <div class="stats-panel">
+          <div class="stats-title">📊 Model Stats</div>
+          <div class="stat-row">
+            <span class="stat-label">Floors:</span>
+            <span class="stat-value" id="stat-floors">1</span>
+          </div>
+          <div class="stat-row">
+            <span class="stat-label">Walls:</span>
+            <span class="stat-value" id="stat-walls">0</span>
+          </div>
+          <div class="stat-row">
+            <span class="stat-label">Doors:</span>
+            <span class="stat-value" id="stat-doors">0</span>
+          </div>
+          <div class="stat-row">
+            <span class="stat-label">Windows:</span>
+            <span class="stat-value" id="stat-windows">0</span>
+          </div>
+        </div>
       </div>
     </div>
   </div>
