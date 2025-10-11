@@ -69,10 +69,10 @@ class HomeDesigner {
         };
 
         this.initScene();
-        this.buildHome();
+        // this.buildHome();  // Don't build preset house on startup
         this.setupEventListeners();
         this.setupViewControls();
-        this.updateInfoPanel();
+        // this.updateInfoPanel();  // No house yet, so no info to show
         this.animate();
     }
 
