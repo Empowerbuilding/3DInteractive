@@ -59,6 +59,31 @@ class FloorPlanApp {
             }
         });
         
+        document.getElementById('mode-patio')?.addEventListener('click', () => {
+            if (this.floorPlanEditor) {
+                this.floorPlanEditor.setMode('patio');
+            }
+        });
+        
+        // Floor management
+        document.getElementById('add-floor')?.addEventListener('click', () => {
+            if (this.floorPlanEditor) {
+                this.floorPlanEditor.addFloor();
+            }
+        });
+        
+        document.getElementById('floor-selector')?.addEventListener('change', (e) => {
+            if (this.floorPlanEditor) {
+                this.floorPlanEditor.switchFloor(parseInt(e.target.value));
+            }
+        });
+        
+        document.getElementById('show-floor-overlay')?.addEventListener('change', () => {
+            if (this.floorPlanEditor) {
+                this.floorPlanEditor.render();
+            }
+        });
+        
         // Export Design button
         document.getElementById('export-design')?.addEventListener('click', () => {
             this.exportDesign();
@@ -70,19 +95,14 @@ class FloorPlanApp {
             console.log('No floor plan to export');
             return;
         }
-        
+
         const floorPlanData = this.floorPlanEditor.getFloorPlanData();
-        
-        if (floorPlanData.wallCount === 0) {
-            alert('Please draw some walls first before exporting.');
-            return;
-        }
         
         // Create export data
         const exportData = {
-            floorPlan: floorPlanData,
-            exportDate: new Date().toISOString(),
-            version: '2.0-Drag-to-Draw'
+            version: '3.0-Multi-Floor',
+            created: new Date().toISOString(),
+            floors: floorPlanData.floors
         };
         
         // Download as JSON
@@ -97,7 +117,12 @@ class FloorPlanApp {
         
         URL.revokeObjectURL(url);
         console.log('✅ Floor plan exported successfully');
-        alert(`Exported ${floorPlanData.wallCount} walls (${floorPlanData.totalLength.toFixed(1)} ft total length)`);
+        
+        // Calculate totals for alert
+        const totalWalls = floorPlanData.floors.reduce((sum, floor) => sum + floor.walls.length, 0);
+        const totalDoors = floorPlanData.floors.reduce((sum, floor) => sum + floor.doors.length, 0);
+        const totalWindows = floorPlanData.floors.reduce((sum, floor) => sum + floor.windows.length, 0);
+        alert(`Exported ${floorPlanData.floors.length} floor(s):\n${totalWalls} walls, ${totalDoors} doors, ${totalWindows} windows`);
     }
 }
 

@@ -26,16 +26,28 @@
       <button id="mode-edit" class="mode-btn">Edit</button>
       <button id="mode-door" class="mode-btn">Add Doors</button>
       <button id="mode-window" class="mode-btn">Add Windows</button>
+      <button id="mode-patio" class="mode-btn">Add Patio</button>
     </div>
     
     <div class="control-section">
-      <label>Wall Material:</label>
-      <select id="wall-material">
-        <option value="brick">Brick</option>
-        <option value="wood-siding" selected>Wood Siding</option>
-        <option value="stucco">Stucco</option>
-        <option value="stone">Stone</option>
-        <option value="vinyl-siding">Vinyl Siding</option>
+      <label>Current Floor:</label>
+      <select id="floor-selector">
+        <option value="0" selected>Floor 1</option>
+      </select>
+      <button id="add-floor" class="btn-secondary">+ Add Floor</button>
+      <label>
+        <input type="checkbox" id="show-floor-overlay" checked>
+        Show Floor Below
+      </label>
+    </div>
+    
+    <div class="control-section">
+      <label>Door Style:</label>
+      <select id="door-style">
+        <option value="swing" selected>Swing Door (3')</option>
+        <option value="pocket">Pocket Door (3')</option>
+        <option value="bifold">Bifold Door (4')</option>
+        <option value="double">Double Door (6')</option>
       </select>
     </div>
     
@@ -50,8 +62,9 @@
   <div class="canvas-container">
     <canvas id="floor-plan-canvas"></canvas>
     <div class="canvas-info">
-      <p>Click and drag to draw walls. Hold Shift for straight lines. Press Delete to remove selected wall.</p>
-      <p>Walls: <span id="wall-count">0</span> | Total Length: <span id="total-length">0</span> ft</p>
+      <p>Draw mode: Drag to draw walls. Edit mode: Select and drag items. Patio mode: Drag to draw rectangles.</p>
+      <p>Hold Shift for straight walls or square patios. Delete key removes selected items. F key flips door swing.</p>
+      <p>Walls: <span id="wall-count">0</span> | Length: <span id="total-length">0</span> ft</p>
     </div>
   </div>
 
