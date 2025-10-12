@@ -454,12 +454,30 @@ class MobileFloorPlanApp {
     }
 }
 
-// Initialize mobile app only on mobile devices
-if (window.innerWidth <= 1024) {
-    document.addEventListener('DOMContentLoaded', () => {
-        console.log('📱 Mobile device detected, loading mobile app...');
+// Initialize mobile app - SIMPLIFIED DETECTION
+function initMobileApp() {
+    console.log('🔍 Checking device...');
+    console.log('Window width:', window.innerWidth);
+    console.log('Is mobile layout visible?', window.getComputedStyle(document.querySelector('.mobile-layout')).display !== 'none');
+    
+    // Check if mobile layout is actually visible (CSS media query handles this)
+    const mobileLayout = document.querySelector('.mobile-layout');
+    const isMobileLayout = mobileLayout && window.getComputedStyle(mobileLayout).display !== 'none';
+    
+    if (isMobileLayout) {
+        console.log('📱 Mobile layout detected, initializing mobile app...');
         const mobileApp = new MobileFloorPlanApp();
         window.mobileApp = mobileApp;
-    });
+    } else {
+        console.log('💻 Desktop layout detected, skipping mobile app initialization');
+    }
+}
+
+// Wait for DOM and styles to fully load
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initMobileApp);
+} else {
+    // DOM already loaded
+    setTimeout(initMobileApp, 100); // Small delay to ensure CSS is applied
 }
 

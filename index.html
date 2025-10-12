@@ -400,6 +400,25 @@
     <div class="mobile-overlay" id="mobile-overlay"></div>
   </div>
 
+  <!-- Debug Script -->
+  <script>
+    console.log('=== LAYOUT DEBUG ===');
+    console.log('Window size:', window.innerWidth, 'x', window.innerHeight);
+    console.log('Device pixel ratio:', window.devicePixelRatio);
+    
+    setTimeout(() => {
+        const mobileLayout = document.querySelector('.mobile-layout');
+        const sidebar = document.querySelector('.sidebar');
+        const toolbar = document.querySelector('.top-toolbar');
+        
+        console.log('Mobile layout display:', mobileLayout ? window.getComputedStyle(mobileLayout).display : 'NOT FOUND');
+        console.log('Sidebar display:', sidebar ? window.getComputedStyle(sidebar).display : 'NOT FOUND');
+        console.log('Toolbar display:', toolbar ? window.getComputedStyle(toolbar).display : 'NOT FOUND');
+        console.log('Mobile layout exists?', !!mobileLayout);
+        console.log('Canvas exists?', !!document.getElementById('mobile-canvas'));
+    }, 500);
+  </script>
+
   <!-- Application Scripts -->
   <script type="module" src="app.js"></script>
   <script type="module" src="mobile-app.js"></script>
