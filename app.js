@@ -329,6 +329,16 @@ class FloorPlanApp {
 
 // Wait for DOM to be fully loaded before initializing
 document.addEventListener('DOMContentLoaded', () => {
+    // Check if we're on mobile - if so, skip desktop app initialization
+    const isMobile = window.innerWidth < 1025;
+    const mobileLayout = document.querySelector('.mobile-layout');
+    const isMobileLayoutVisible = mobileLayout && window.getComputedStyle(mobileLayout).display !== 'none';
+    
+    if (isMobile || isMobileLayoutVisible) {
+        console.log('📱 Mobile detected - skipping desktop app initialization');
+        return;
+    }
+    
     console.log('DOM loaded, initializing Floor Plan Designer + 3D Viewer...');
     const floorPlanApp = new FloorPlanApp();
     window.floorPlanApp = floorPlanApp;

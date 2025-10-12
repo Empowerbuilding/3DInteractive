@@ -34,16 +34,30 @@ class MobileFloorPlanApp {
             return;
         }
         
+        console.log('📱 Initializing mobile app...');
+        
         // CRITICAL: Set canvas sizes BEFORE initializing editor
         this.resizeCanvas();
         
-        // Initialize 2D editor with canvas that's already properly sized
-        this.floorPlanEditor = new FloorPlanEditor('mobile-canvas-2d');
-        console.log('✅ 2D editor initialized');
+        // Check if desktop app already created instances
+        if (window.floorPlanApp) {
+            console.log('⚠️ Desktop app detected - using its instances');
+            this.floorPlanEditor = window.floorPlanApp.floorPlanEditor;
+            this.threejsGenerator = window.floorPlanApp.threejsGenerator;
+        } else {
+            console.log('📱 Creating new mobile instances...');
+            
+            // Initialize 2D editor with canvas that's already properly sized
+            this.floorPlanEditor = new FloorPlanEditor('mobile-canvas-2d');
+            console.log('✅ 2D editor initialized');
+            
+            // Initialize 3D generator with separate canvas
+            this.threejsGenerator = new ThreeJSGenerator('mobile-canvas-3d');
+            console.log('✅ 3D generator initialized');
+        }
         
-        // Initialize 3D generator with separate canvas
-        this.threejsGenerator = new ThreeJSGenerator('mobile-canvas-3d');
-        console.log('✅ 3D generator initialized');
+        // Generate initial 3D model (even if empty)
+        this.update3DModel();
         
         // Hide 3D canvas initially
         this.canvas3D.style.display = 'none';
