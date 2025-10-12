@@ -8,45 +8,46 @@ class MobileFloorPlanApp {
     constructor() {
         console.log('📱 Mobile App Constructor Called');
         console.log('Window width:', window.innerWidth);
-        console.log('Canvas element:', document.getElementById('mobile-canvas'));
         
         this.currentView = '2d'; // '2d' or '3d'
         this.floorPlanEditor = null;
         this.threejsGenerator = null;
-        this.canvas = document.getElementById('mobile-canvas');
+        this.canvas2D = document.getElementById('mobile-canvas-2d');
+        this.canvas3D = document.getElementById('mobile-canvas-3d');
         
-        if (!this.canvas) {
-            console.error('❌ CRITICAL: mobile-canvas element not found!');
-            console.log('Available elements:', document.querySelectorAll('canvas'));
+        console.log('2D Canvas element:', this.canvas2D);
+        console.log('3D Canvas element:', this.canvas3D);
+        
+        if (!this.canvas2D || !this.canvas3D) {
+            console.error('❌ CRITICAL: mobile canvases not found!');
+            console.log('Available canvases:', document.querySelectorAll('canvas'));
             return;
         }
         
-        console.log('✅ Canvas found, initializing...');
+        console.log('✅ Both canvases found, initializing...');
         this.init();
     }
 
     init() {
-        if (!this.canvas) {
-            console.error('Mobile canvas not found!');
+        if (!this.canvas2D || !this.canvas3D) {
+            console.error('Mobile canvases not found!');
             return;
         }
         
-        // Set canvas size to container
+        // Set canvas sizes to container
         this.resizeCanvas();
         window.addEventListener('resize', () => this.resizeCanvas());
         
-        // Initialize 2D editor first
-        this.floorPlanEditor = new FloorPlanEditor('mobile-canvas');
+        // Initialize 2D editor with separate canvas
+        this.floorPlanEditor = new FloorPlanEditor('mobile-canvas-2d');
         console.log('✅ 2D editor initialized');
         
-        // Initialize 3D generator
-        this.threejsGenerator = new ThreeJSGenerator('mobile-canvas');
+        // Initialize 3D generator with separate canvas
+        this.threejsGenerator = new ThreeJSGenerator('mobile-canvas-3d');
         console.log('✅ 3D generator initialized');
         
-        // Hide 3D initially
-        if (this.threejsGenerator.renderer) {
-            this.threejsGenerator.renderer.domElement.style.display = 'none';
-        }
+        // Hide 3D canvas initially
+        this.canvas3D.style.display = 'none';
         
         this.setupEventListeners();
         this.setupBottomSheet();
@@ -56,27 +57,30 @@ class MobileFloorPlanApp {
     }
 
     resizeCanvas() {
-        if (!this.canvas) return;
+        const container = document.querySelector('.mobile-canvas-container');
+        if (!container) return;
         
-        const container = this.canvas.parentElement;
         const rect = container.getBoundingClientRect();
-        
-        // Set canvas display size (CSS)
-        this.canvas.style.width = rect.width + 'px';
-        this.canvas.style.height = rect.height + 'px';
-        
-        // Set canvas actual size (rendering buffer)
         const dpr = window.devicePixelRatio || 1;
-        this.canvas.width = rect.width * dpr;
-        this.canvas.height = rect.height * dpr;
         
-        // Scale context for high DPI
-        const ctx = this.canvas.getContext('2d');
-        if (ctx) {
-            ctx.scale(dpr, dpr);
+        [this.canvas2D, this.canvas3D].forEach(canvas => {
+            if (!canvas) return;
+            
+            // CSS size
+            canvas.style.width = rect.width + 'px';
+            canvas.style.height = rect.height + 'px';
+            
+            // Buffer size
+            canvas.width = rect.width * dpr;
+            canvas.height = rect.height * dpr;
+        });
+        
+        // Notify Three.js renderer of size change
+        if (this.threejsGenerator && this.threejsGenerator.renderer) {
+            this.threejsGenerator.renderer.setSize(rect.width, rect.height);
         }
         
-        console.log(`Canvas resized to ${rect.width}x${rect.height} (DPR: ${dpr})`);
+        console.log(`Canvases resized to ${rect.width}x${rect.height} (DPR: ${dpr})`);
     }
 
     setupEventListeners() {
@@ -358,20 +362,16 @@ class MobileFloorPlanApp {
 
         if (view === '2d') {
             // Show 2D canvas, hide 3D
-            this.floorPlanEditor.canvas.style.display = 'block';
-            if (this.threejsGenerator.renderer) {
-                this.threejsGenerator.renderer.domElement.style.display = 'none';
-            }
+            this.canvas2D.style.display = 'block';
+            this.canvas3D.style.display = 'none';
             if (hint) {
                 hint.style.display = 'none';
             }
         } else {
             // Show 3D canvas, hide 2D
+            this.canvas2D.style.display = 'none';
+            this.canvas3D.style.display = 'block';
             this.update3DModel();
-            this.floorPlanEditor.canvas.style.display = 'none';
-            if (this.threejsGenerator.renderer) {
-                this.threejsGenerator.renderer.domElement.style.display = 'block';
-            }
             if (hint) {
                 hint.style.display = 'block';
                 // Hide hint after 3 seconds

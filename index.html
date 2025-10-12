@@ -243,7 +243,8 @@
 
     <!-- Canvas Container (Full Screen) -->
     <div class="mobile-canvas-container">
-      <canvas id="mobile-canvas"></canvas>
+      <canvas id="mobile-canvas-2d"></canvas>
+      <canvas id="mobile-canvas-3d"></canvas>
       
       <!-- 2D/3D View Toggle (Floating) -->
       <div class="view-switcher">
@@ -415,7 +416,8 @@
         console.log('Sidebar display:', sidebar ? window.getComputedStyle(sidebar).display : 'NOT FOUND');
         console.log('Toolbar display:', toolbar ? window.getComputedStyle(toolbar).display : 'NOT FOUND');
         console.log('Mobile layout exists?', !!mobileLayout);
-        console.log('Canvas exists?', !!document.getElementById('mobile-canvas'));
+        console.log('2D Canvas exists?', !!document.getElementById('mobile-canvas-2d'));
+        console.log('3D Canvas exists?', !!document.getElementById('mobile-canvas-3d'));
     }, 500);
   </script>
 
