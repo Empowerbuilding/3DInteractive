@@ -38,6 +38,10 @@ export class FloorPlanEditor {
         this.isDraggingPatio = false;
         this.draggedPatioCorner = null; // Which corner: 'nw', 'ne', 'sw', 'se', or null for whole patio
         
+        // Default patio roof settings (when no patio is selected)
+        this.defaultPatioHasRoof = false;
+        this.defaultPatioRoofStyle = 'flat';
+        
         // Dragging state
         this.isDraggingWall = false;
         this.isDraggingEndpoint = false;
@@ -216,14 +220,13 @@ export class FloorPlanEditor {
                 
                 // Update UI controls for selected patio
                 const patio = this.floors[this.currentFloor].patios[patioIndex];
-                const hasRoofCheckbox = document.getElementById('patio-has-roof');
                 const roofStyleSelect = document.getElementById('patio-roof-style');
-                if (hasRoofCheckbox) {
-                    hasRoofCheckbox.checked = patio.hasRoof || false;
-                }
                 if (roofStyleSelect) {
                     roofStyleSelect.value = patio.roofStyle || 'flat';
                 }
+                
+                // Update checkbox label and state
+                this.updatePatioCheckboxLabel();
                 
                 this.render();
                 return;
@@ -231,6 +234,7 @@ export class FloorPlanEditor {
             
             // Clear patio selection
             this.selectedPatio = null;
+            this.updatePatioCheckboxLabel();
             
             // Check doors
             const doorIndex = this.findDoorAt(pos.x, pos.y);
@@ -603,8 +607,8 @@ export class FloorPlanEditor {
                     y,
                     width,
                     height,
-                    hasRoof: document.getElementById('patio-has-roof')?.checked || false,
-                    roofStyle: document.getElementById('patio-roof-style')?.value || 'flat',
+                    hasRoof: this.defaultPatioHasRoof,
+                    roofStyle: this.defaultPatioRoofStyle,
                     roofHeight: 8  // Default 8 feet clearance
                 };
                 this.floors[this.currentFloor].patios.push(patio);
@@ -672,6 +676,7 @@ export class FloorPlanEditor {
             } else if (this.selectedPatio !== null) {
                 this.floors[this.currentFloor].patios.splice(this.selectedPatio, 1);
                 this.selectedPatio = null;
+                this.updatePatioCheckboxLabel();
                 this.render();
                 this.updateMeasurements();
                 console.log('Patio deleted');
@@ -1461,6 +1466,9 @@ export class FloorPlanEditor {
         this.selectedWindow = null;
         this.selectedPatio = null;
         
+        // Update patio checkbox label when deselecting
+        this.updatePatioCheckboxLabel();
+        
         console.log('Mode changed to:', mode);
         
         // Update cursor based on mode
@@ -1573,6 +1581,20 @@ export class FloorPlanEditor {
             this.render();
         }
     }
+    
+    updateAllPatioRoofSettings(hasRoof, roofStyle) {
+        // Update all existing patios on current floor
+        this.floors[this.currentFloor].patios.forEach(patio => {
+            patio.hasRoof = hasRoof;
+            patio.roofStyle = roofStyle || 'flat';
+        });
+        
+        // Update default settings for new patios
+        this.defaultPatioHasRoof = hasRoof;
+        this.defaultPatioRoofStyle = roofStyle || 'flat';
+        
+        this.render();
+    }
 
     getSelectedPatioRoofSettings() {
         if (this.selectedPatio !== null) {
@@ -1582,7 +1604,28 @@ export class FloorPlanEditor {
                 roofStyle: patio?.roofStyle || 'flat'
             };
         }
-        return { hasRoof: false, roofStyle: 'flat' };
+        return { 
+            hasRoof: this.defaultPatioHasRoof, 
+            roofStyle: this.defaultPatioRoofStyle 
+        };
+    }
+    
+    updatePatioCheckboxLabel() {
+        const label = document.querySelector('label[for="patio-has-roof"] span, label:has(#patio-has-roof) span');
+        const checkbox = document.getElementById('patio-has-roof');
+        
+        if (label && checkbox) {
+            if (this.selectedPatio !== null) {
+                label.textContent = 'Add Roof to This Patio';
+                // Update checkbox to match selected patio
+                const patio = this.floors[this.currentFloor].patios[this.selectedPatio];
+                checkbox.checked = patio?.hasRoof || false;
+            } else {
+                label.textContent = 'Add Roof to All Patios';
+                // Update checkbox to match default setting
+                checkbox.checked = this.defaultPatioHasRoof;
+            }
+        }
     }
     
     updateFloorSelector() {

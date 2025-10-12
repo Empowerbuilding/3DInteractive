@@ -481,31 +481,91 @@ export class ThreeJSGenerator {
             
             // Generate roof over patio if enabled
             if (patio.hasRoof) {
-                this.generatePatioRoof(patio, x, z, width, depth, centerX, centerZ, yOffset, feetToMeters);
+                this.generatePatioRoof(patio, floor, x, z, width, depth, centerX, centerZ, yOffset, feetToMeters, gridSize);
             }
         });
     }
     
-    generatePatioRoof(patio, x, z, width, depth, centerX, centerZ, yOffset, feetToMeters) {
+    generatePatioRoof(patio, floor, x, z, width, depth, centerX, centerZ, yOffset, feetToMeters, gridSize) {
         const roofHeight = (patio.roofHeight || 8) * feetToMeters;
         const roofStyle = patio.roofStyle || 'flat';
         const postRadius = 0.1; // meters (about 4 inches)
         const postHeight = roofHeight - 0.3; // Slightly lower than roof height
         
-        // Create 4 support posts at corners
+        // Helper function to check if a point is near any wall
+        const isPointNearWall = (pointX, pointZ) => {
+            const postTolerance = 1.5 * feetToMeters; // 1.5 feet tolerance for post placement
+            
+            for (let wall of floor.walls) {
+                const wallStartX = (wall.startX / gridSize) * feetToMeters;
+                const wallStartZ = (wall.startY / gridSize) * feetToMeters;
+                const wallEndX = (wall.endX / gridSize) * feetToMeters;
+                const wallEndZ = (wall.endY / gridSize) * feetToMeters;
+                
+                // Calculate distance from point to wall line segment
+                const dx = wallEndX - wallStartX;
+                const dz = wallEndZ - wallStartZ;
+                const wallLength = Math.sqrt(dx * dx + dz * dz);
+                
+                if (wallLength < 0.01) continue; // Skip zero-length walls
+                
+                // Normalized direction vector
+                const ndx = dx / wallLength;
+                const ndz = dz / wallLength;
+                
+                // Vector from wall start to point
+                const px = pointX - wallStartX;
+                const pz = pointZ - wallStartZ;
+                
+                // Project point onto wall line
+                const projection = px * ndx + pz * ndz;
+                
+                // Clamp projection to wall segment
+                const clampedProjection = Math.max(0, Math.min(wallLength, projection));
+                
+                // Find closest point on wall segment
+                const closestX = wallStartX + ndx * clampedProjection;
+                const closestZ = wallStartZ + ndz * clampedProjection;
+                
+                // Calculate distance from point to closest point on wall
+                const distX = pointX - closestX;
+                const distZ = pointZ - closestZ;
+                const distance = Math.sqrt(distX * distX + distZ * distZ);
+                
+                // If point is too close to wall, don't place post here
+                if (distance < postTolerance) {
+                    return true;
+                }
+            }
+            
+            return false;
+        };
+        
+        // Create support posts only at corners that are NOT too close to walls
         const postGeometry = new THREE.CylinderGeometry(postRadius, postRadius, postHeight, 8);
         const postMaterial = new THREE.MeshStandardMaterial({ 
             color: 0x8b4513,
             roughness: 0.8 
         });
         
-        const postPositions = [
+        const postPositions = [];
+        
+        // Check each corner position
+        const potentialPosts = [
             { x: x + 0.3, z: z + 0.3 },           // Front-left
             { x: x + width - 0.3, z: z + 0.3 },  // Front-right
             { x: x + 0.3, z: z + depth - 0.3 },  // Back-left
             { x: x + width - 0.3, z: z + depth - 0.3 }  // Back-right
         ];
         
+        // Only add posts that aren't near walls
+        potentialPosts.forEach(pos => {
+            if (!isPointNearWall(pos.x, pos.z)) {
+                postPositions.push(pos);
+            }
+        });
+        
+        // Create the posts
         postPositions.forEach(pos => {
             const post = new THREE.Mesh(postGeometry, postMaterial);
             post.position.set(pos.x, yOffset + postHeight / 2, pos.z);
@@ -518,8 +578,68 @@ export class ThreeJSGenerator {
         // Generate roof based on style
         const roofY = yOffset + postHeight;
         const overhang = 0.5; // meters overhang
-        const roofWidth = width + (overhang * 2);
-        const roofDepth = depth + (overhang * 2);
+        
+        // Detect which edges are near walls to avoid overhang into house
+        const edgeTolerance = 0.8 * feetToMeters; // 0.8 feet tolerance
+        const patioLeft = x;
+        const patioRight = x + width;
+        const patioFront = z;
+        const patioBack = z + depth;
+        
+        let leftNearWall = false;
+        let rightNearWall = false;
+        let frontNearWall = false;
+        let backNearWall = false;
+        
+        // Check if any edge is close to a wall
+        floor.walls.forEach(wall => {
+            const wallStartX = (wall.startX / gridSize) * feetToMeters;
+            const wallStartZ = (wall.startY / gridSize) * feetToMeters;
+            const wallEndX = (wall.endX / gridSize) * feetToMeters;
+            const wallEndZ = (wall.endY / gridSize) * feetToMeters;
+            
+            const wallMinX = Math.min(wallStartX, wallEndX);
+            const wallMaxX = Math.max(wallStartX, wallEndX);
+            const wallMinZ = Math.min(wallStartZ, wallEndZ);
+            const wallMaxZ = Math.max(wallStartZ, wallEndZ);
+            
+            // Check if wall runs along an edge (with some overlap)
+            const overlapZ = !(wallMaxZ < patioFront - edgeTolerance || wallMinZ > patioBack + edgeTolerance);
+            const overlapX = !(wallMaxX < patioLeft - edgeTolerance || wallMinX > patioRight + edgeTolerance);
+            
+            // Check vertical walls (left/right edges)
+            if (Math.abs(wallMaxX - wallMinX) < edgeTolerance && overlapZ) {
+                if (Math.abs((wallMinX + wallMaxX) / 2 - patioLeft) < edgeTolerance) {
+                    leftNearWall = true;
+                }
+                if (Math.abs((wallMinX + wallMaxX) / 2 - patioRight) < edgeTolerance) {
+                    rightNearWall = true;
+                }
+            }
+            
+            // Check horizontal walls (front/back edges)
+            if (Math.abs(wallMaxZ - wallMinZ) < edgeTolerance && overlapX) {
+                if (Math.abs((wallMinZ + wallMaxZ) / 2 - patioFront) < edgeTolerance) {
+                    frontNearWall = true;
+                }
+                if (Math.abs((wallMinZ + wallMaxZ) / 2 - patioBack) < edgeTolerance) {
+                    backNearWall = true;
+                }
+            }
+        });
+        
+        // Calculate roof dimensions with smart overhang
+        const overhangLeft = leftNearWall ? 0 : overhang;
+        const overhangRight = rightNearWall ? 0 : overhang;
+        const overhangFront = frontNearWall ? 0 : overhang;
+        const overhangBack = backNearWall ? 0 : overhang;
+        
+        const roofWidth = width + overhangLeft + overhangRight;
+        const roofDepth = depth + overhangFront + overhangBack;
+        
+        // Adjust roof center based on asymmetric overhang
+        const roofCenterX = centerX + (overhangRight - overhangLeft) / 2;
+        const roofCenterZ = centerZ + (overhangBack - overhangFront) / 2;
         
         let roofMesh;
         
@@ -527,7 +647,7 @@ export class ThreeJSGenerator {
             // Flat roof
             const roofGeometry = new THREE.BoxGeometry(roofWidth, 0.2, roofDepth);
             roofMesh = new THREE.Mesh(roofGeometry, this.materials.roof);
-            roofMesh.position.set(centerX, roofY + 0.1, centerZ);
+            roofMesh.position.set(roofCenterX, roofY + 0.1, roofCenterZ);
             
         } else if (roofStyle === 'gable') {
             // Gable roof
@@ -583,7 +703,7 @@ export class ThreeJSGenerator {
             gableMaterial.side = THREE.DoubleSide;
             
             roofMesh = new THREE.Mesh(geometry, gableMaterial);
-            roofMesh.position.set(centerX, roofY, centerZ);
+            roofMesh.position.set(roofCenterX, roofY, roofCenterZ);
             
         } else if (roofStyle === 'hip') {
             // Hip roof
@@ -618,7 +738,7 @@ export class ThreeJSGenerator {
             hipMaterial.side = THREE.DoubleSide;
             
             roofMesh = new THREE.Mesh(geometry, hipMaterial);
-            roofMesh.position.set(centerX, roofY, centerZ);
+            roofMesh.position.set(roofCenterX, roofY, roofCenterZ);
         }
         
         if (roofMesh) {

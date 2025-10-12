@@ -111,12 +111,20 @@ class FloorPlanApp {
         // Patio Roof Checkbox
         document.getElementById('patio-has-roof')?.addEventListener('change', (e) => {
             const hasRoof = e.target.checked;
-            if (this.floorPlanEditor && this.floorPlanEditor.selectedPatio !== null) {
-                this.floorPlanEditor.updatePatioRoofSettings(
-                    this.floorPlanEditor.selectedPatio,
-                    hasRoof,
-                    document.getElementById('patio-roof-style')?.value
-                );
+            const roofStyle = document.getElementById('patio-roof-style')?.value || 'flat';
+            
+            if (this.floorPlanEditor) {
+                if (this.floorPlanEditor.selectedPatio !== null) {
+                    // Update only the selected patio
+                    this.floorPlanEditor.updatePatioRoofSettings(
+                        this.floorPlanEditor.selectedPatio,
+                        hasRoof,
+                        roofStyle
+                    );
+                } else {
+                    // Update all patios and set as default for new ones
+                    this.floorPlanEditor.updateAllPatioRoofSettings(hasRoof, roofStyle);
+                }
                 this.update3DModel();
             }
         });
@@ -124,12 +132,20 @@ class FloorPlanApp {
         // Patio Roof Style Dropdown
         document.getElementById('patio-roof-style')?.addEventListener('change', (e) => {
             const roofStyle = e.target.value;
-            if (this.floorPlanEditor && this.floorPlanEditor.selectedPatio !== null) {
-                this.floorPlanEditor.updatePatioRoofSettings(
-                    this.floorPlanEditor.selectedPatio,
-                    document.getElementById('patio-has-roof')?.checked,
-                    roofStyle
-                );
+            const hasRoof = document.getElementById('patio-has-roof')?.checked || false;
+            
+            if (this.floorPlanEditor) {
+                if (this.floorPlanEditor.selectedPatio !== null) {
+                    // Update only the selected patio
+                    this.floorPlanEditor.updatePatioRoofSettings(
+                        this.floorPlanEditor.selectedPatio,
+                        hasRoof,
+                        roofStyle
+                    );
+                } else {
+                    // Update all patios and set as default for new ones
+                    this.floorPlanEditor.updateAllPatioRoofSettings(hasRoof, roofStyle);
+                }
                 this.update3DModel();
             }
         });
