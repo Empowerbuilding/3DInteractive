@@ -99,15 +99,17 @@ export class FloorPlanEditor {
         const isMobile = container && container.classList.contains('mobile-canvas-container');
         
         if (isMobile) {
-            // On mobile, DON'T resize - let mobile-app.js handle it
-            // Just re-render with current canvas size
+            // On mobile, canvas size is controlled by mobile-app.js
+            // Just re-render with whatever size is already set
             this.render();
             return;
         }
         
-        // Desktop mode - resize normally
-        this.canvas.width = container.clientWidth;
-        this.canvas.height = container.clientHeight - 60; // Account for info bar
+        // Desktop mode - resize canvas to fill container
+        if (container) {
+            this.canvas.width = container.clientWidth;
+            this.canvas.height = container.clientHeight - 60; // Account for info bar
+        }
         this.render();
     }
     
@@ -117,34 +119,43 @@ export class FloorPlanEditor {
         this.canvas.addEventListener('mousemove', (e) => this.handleMouseMove(e));
         this.canvas.addEventListener('mouseup', (e) => this.handleMouseUp(e));
         
-        // Touch events for mobile support
+        // Touch events for mobile support - pass touch events directly
         this.canvas.addEventListener('touchstart', (e) => {
             e.preventDefault(); // Prevent scrolling while drawing
             const touch = e.touches[0];
-            const mouseEvent = new MouseEvent('mousedown', {
+            // Create a proper event object with all necessary properties
+            const syntheticEvent = {
                 clientX: touch.clientX,
-                clientY: touch.clientY
-            });
-            this.handleMouseDown(mouseEvent);
+                clientY: touch.clientY,
+                preventDefault: () => {},
+                stopPropagation: () => {}
+            };
+            this.handleMouseDown(syntheticEvent);
         }, { passive: false });
         
         this.canvas.addEventListener('touchmove', (e) => {
             e.preventDefault();
             const touch = e.touches[0];
-            const mouseEvent = new MouseEvent('mousemove', {
+            const syntheticEvent = {
                 clientX: touch.clientX,
-                clientY: touch.clientY
-            });
-            this.handleMouseMove(mouseEvent);
+                clientY: touch.clientY,
+                preventDefault: () => {},
+                stopPropagation: () => {}
+            };
+            this.handleMouseMove(syntheticEvent);
         }, { passive: false });
         
         this.canvas.addEventListener('touchend', (e) => {
             e.preventDefault();
-            const mouseEvent = new MouseEvent('mouseup', {
-                clientX: 0,
-                clientY: 0
-            });
-            this.handleMouseUp(mouseEvent);
+            // For touchend, we need to get the last position from changedTouches
+            const touch = e.changedTouches[0];
+            const syntheticEvent = {
+                clientX: touch ? touch.clientX : 0,
+                clientY: touch ? touch.clientY : 0,
+                preventDefault: () => {},
+                stopPropagation: () => {}
+            };
+            this.handleMouseUp(syntheticEvent);
         }, { passive: false });
         
         // Keyboard events

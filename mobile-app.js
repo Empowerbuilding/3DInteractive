@@ -34,22 +34,12 @@ class MobileFloorPlanApp {
             return;
         }
         
-        // Set canvas sizes to container
+        // CRITICAL: Set canvas sizes BEFORE initializing editor
         this.resizeCanvas();
-        window.addEventListener('resize', () => this.resizeCanvas());
         
-        // Initialize 2D editor with separate canvas
+        // Initialize 2D editor with canvas that's already properly sized
         this.floorPlanEditor = new FloorPlanEditor('mobile-canvas-2d');
         console.log('✅ 2D editor initialized');
-        
-        // CRITICAL: Force canvas size after FloorPlanEditor initialization
-        // FloorPlanEditor's constructor calls resizeCanvas(), which might set wrong size
-        setTimeout(() => {
-            this.resizeCanvas();
-            if (this.floorPlanEditor) {
-                this.floorPlanEditor.render();
-            }
-        }, 100);
         
         // Initialize 3D generator with separate canvas
         this.threejsGenerator = new ThreeJSGenerator('mobile-canvas-3d');
@@ -57,6 +47,9 @@ class MobileFloorPlanApp {
         
         // Hide 3D canvas initially
         this.canvas3D.style.display = 'none';
+        
+        // Set up resize handler
+        window.addEventListener('resize', () => this.resizeCanvas());
         
         this.setupEventListeners();
         this.setupBottomSheet();
