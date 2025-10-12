@@ -283,6 +283,13 @@ class MobileFloorPlanApp {
                     throw new Error('3D canvas not found');
                 }
                 
+                console.log('📸 Capturing canvas:', {
+                    width: canvas.width,
+                    height: canvas.height,
+                    displayWidth: canvas.clientWidth,
+                    displayHeight: canvas.clientHeight
+                });
+                
                 if (statusText) statusText.textContent = 'Preparing image...';
                 
                 // Convert canvas to blob with maximum quality

@@ -55,7 +55,8 @@ export class ThreeJSGenerator {
         // Renderer
         this.renderer = new THREE.WebGLRenderer({ 
             canvas: this.canvas, 
-            antialias: true 
+            antialias: true,
+            preserveDrawingBuffer: true // Required for canvas.toBlob() screenshots
         });
         this.renderer.setSize(this.canvas.clientWidth, this.canvas.clientHeight);
         this.renderer.setPixelRatio(window.devicePixelRatio);
