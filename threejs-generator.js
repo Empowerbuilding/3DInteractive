@@ -70,6 +70,14 @@ export class ThreeJSGenerator {
         this.controls.minDistance = 5;
         this.controls.maxDistance = 150;
         
+        // Mobile touch controls
+        this.controls.touches = {
+            ONE: THREE.TOUCH.ROTATE,
+            TWO: THREE.TOUCH.DOLLY_PAN
+        };
+        this.controls.enableZoom = true;
+        this.controls.enablePan = true;
+        
         // Lights
         const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
         this.scene.add(ambientLight);

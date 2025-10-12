@@ -6,24 +6,44 @@ import { ThreeJSGenerator } from './threejs-generator.js';
 
 class MobileFloorPlanApp {
     constructor() {
-        console.log('📱 Initializing Mobile Floor Plan App...');
+        console.log('📱 Mobile App Constructor Called');
+        console.log('Window width:', window.innerWidth);
+        console.log('Canvas element:', document.getElementById('mobile-canvas'));
         
         this.currentView = '2d'; // '2d' or '3d'
         this.floorPlanEditor = null;
         this.threejsGenerator = null;
         this.canvas = document.getElementById('mobile-canvas');
         
+        if (!this.canvas) {
+            console.error('❌ CRITICAL: mobile-canvas element not found!');
+            console.log('Available elements:', document.querySelectorAll('canvas'));
+            return;
+        }
+        
+        console.log('✅ Canvas found, initializing...');
         this.init();
     }
 
     init() {
+        if (!this.canvas) {
+            console.error('Mobile canvas not found!');
+            return;
+        }
+        
+        // Set canvas size to container
+        this.resizeCanvas();
+        window.addEventListener('resize', () => this.resizeCanvas());
+        
         // Initialize 2D editor first
         this.floorPlanEditor = new FloorPlanEditor('mobile-canvas');
+        console.log('✅ 2D editor initialized');
         
-        // Initialize 3D generator (will create its own canvas/renderer)
+        // Initialize 3D generator
         this.threejsGenerator = new ThreeJSGenerator('mobile-canvas');
+        console.log('✅ 3D generator initialized');
         
-        // Hide 3D renderer initially (show 2D canvas)
+        // Hide 3D initially
         if (this.threejsGenerator.renderer) {
             this.threejsGenerator.renderer.domElement.style.display = 'none';
         }
@@ -32,7 +52,31 @@ class MobileFloorPlanApp {
         this.setupBottomSheet();
         this.setupSideMenu();
         
-        console.log('✅ Mobile app initialized');
+        console.log('✅ Mobile app fully initialized');
+    }
+
+    resizeCanvas() {
+        if (!this.canvas) return;
+        
+        const container = this.canvas.parentElement;
+        const rect = container.getBoundingClientRect();
+        
+        // Set canvas display size (CSS)
+        this.canvas.style.width = rect.width + 'px';
+        this.canvas.style.height = rect.height + 'px';
+        
+        // Set canvas actual size (rendering buffer)
+        const dpr = window.devicePixelRatio || 1;
+        this.canvas.width = rect.width * dpr;
+        this.canvas.height = rect.height * dpr;
+        
+        // Scale context for high DPI
+        const ctx = this.canvas.getContext('2d');
+        if (ctx) {
+            ctx.scale(dpr, dpr);
+        }
+        
+        console.log(`Canvas resized to ${rect.width}x${rect.height} (DPR: ${dpr})`);
     }
 
     setupEventListeners() {
