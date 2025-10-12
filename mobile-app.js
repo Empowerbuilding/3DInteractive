@@ -268,6 +268,9 @@ class MobileFloorPlanApp {
         const sheet = document.getElementById('mobile-tools-sheet');
         if (!sheet) return;
 
+        // Start collapsed by default - just tabs showing
+        sheet.classList.remove('expanded');
+
         const handle = sheet.querySelector('.sheet-handle');
         let startY = 0;
         let currentY = 0;
@@ -295,7 +298,7 @@ class MobileFloorPlanApp {
             } else {
                 // Dragging up
                 if (!isExpanded) {
-                    const peekHeight = window.innerHeight * 0.35 - 140; // 35% collapsed
+                    const peekHeight = window.innerHeight * 0.25 - 80; // 25% collapsed - just tabs
                     const newPos = Math.max(0, peekHeight + deltaY);
                     sheet.style.transform = `translateY(${newPos}px)`;
                 }
@@ -313,7 +316,7 @@ class MobileFloorPlanApp {
             if (deltaY > 80) {
                 // Swipe down - collapse
                 sheet.classList.remove('expanded');
-                sheet.style.transform = 'translateY(calc(100% - 140px))';
+                sheet.style.transform = 'translateY(calc(100% - 80px))';
             } else if (deltaY < -80) {
                 // Swipe up - expand
                 sheet.classList.add('expanded');
@@ -323,7 +326,7 @@ class MobileFloorPlanApp {
                 if (sheet.classList.contains('expanded')) {
                     sheet.style.transform = 'translateY(0)';
                 } else {
-                    sheet.style.transform = 'translateY(calc(100% - 140px))';
+                    sheet.style.transform = 'translateY(calc(100% - 80px))';
                 }
             }
         };
