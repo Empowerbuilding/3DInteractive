@@ -94,6 +94,18 @@ export class FloorPlanEditor {
     
     resizeCanvas() {
         const container = this.canvas.parentElement;
+        
+        // Check if we're in mobile mode
+        const isMobile = container && container.classList.contains('mobile-canvas-container');
+        
+        if (isMobile) {
+            // On mobile, DON'T resize - let mobile-app.js handle it
+            // Just re-render with current canvas size
+            this.render();
+            return;
+        }
+        
+        // Desktop mode - resize normally
         this.canvas.width = container.clientWidth;
         this.canvas.height = container.clientHeight - 60; // Account for info bar
         this.render();

@@ -42,6 +42,15 @@ class MobileFloorPlanApp {
         this.floorPlanEditor = new FloorPlanEditor('mobile-canvas-2d');
         console.log('✅ 2D editor initialized');
         
+        // CRITICAL: Force canvas size after FloorPlanEditor initialization
+        // FloorPlanEditor's constructor calls resizeCanvas(), which might set wrong size
+        setTimeout(() => {
+            this.resizeCanvas();
+            if (this.floorPlanEditor) {
+                this.floorPlanEditor.render();
+            }
+        }, 100);
+        
         // Initialize 3D generator with separate canvas
         this.threejsGenerator = new ThreeJSGenerator('mobile-canvas-3d');
         console.log('✅ 3D generator initialized');
