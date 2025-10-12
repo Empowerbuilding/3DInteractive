@@ -273,9 +273,11 @@ class MobileFloorPlanApp {
 
         const handle = sheet.querySelector('.sheet-handle');
         const toolTabs = sheet.querySelector('.tool-tabs');
+        const sheetHeader = sheet.querySelector('.sheet-header');
         let startY = 0;
         let currentY = 0;
         let isDragging = false;
+        let startTime = 0;
 
         const startDrag = (e) => {
             // Don't start drag if clicking on a button
@@ -285,8 +287,10 @@ class MobileFloorPlanApp {
             
             e.preventDefault();
             startY = e.type.includes('mouse') ? e.clientY : e.touches[0].clientY;
+            startTime = Date.now();
             isDragging = true;
             sheet.style.transition = 'none';
+            console.log('🟢 Drag started at Y:', startY);
         };
 
         const doDrag = (e) => {
@@ -301,37 +305,57 @@ class MobileFloorPlanApp {
             if (deltaY > 0) {
                 // Dragging down
                 if (isExpanded) {
-                    sheet.style.transform = `translateY(${deltaY}px)`;
+                    // Apply resistance when dragging down from expanded state
+                    const resistance = 0.5;
+                    sheet.style.transform = `translateY(${deltaY * resistance}px)`;
                 }
             } else {
                 // Dragging up
                 if (!isExpanded) {
-                    const peekHeight = window.innerHeight * 0.25 - 80; // 25% collapsed - just tabs
-                    const newPos = Math.max(0, peekHeight + deltaY);
-                    sheet.style.transform = `translateY(${newPos}px)`;
+                    // When collapsed, allow full movement up
+                    // Start from collapsed position and move toward 0
+                    const collapsedHeight = 80;
+                    const maxMove = window.innerHeight - collapsedHeight;
+                    const move = Math.min(Math.abs(deltaY), maxMove);
+                    sheet.style.transform = `translateY(calc(100% - ${collapsedHeight + move}px))`;
                 }
             }
         };
 
         const endDrag = () => {
             if (!isDragging) return;
+            
+            const endTime = Date.now();
+            const deltaY = currentY - startY;
+            const duration = endTime - startTime;
+            const velocity = Math.abs(deltaY) / duration; // pixels per ms
+            
+            console.log('🔴 Drag ended - deltaY:', deltaY, 'velocity:', velocity.toFixed(2));
+            
             isDragging = false;
             
             sheet.style.transition = 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)';
             
-            const deltaY = currentY - startY;
+            const isExpanded = sheet.classList.contains('expanded');
             
-            if (deltaY > 80) {
-                // Swipe down - collapse
-                sheet.classList.remove('expanded');
-                sheet.style.transform = 'translateY(calc(100% - 80px))';
-            } else if (deltaY < -80) {
+            // Lower threshold: 40px or fast swipe (velocity > 0.5)
+            const isSwipeUp = deltaY < -40 || (deltaY < 0 && velocity > 0.5);
+            const isSwipeDown = deltaY > 40 || (deltaY > 0 && velocity > 0.5);
+            
+            if (isSwipeUp && !isExpanded) {
                 // Swipe up - expand
+                console.log('✅ Expanding sheet');
                 sheet.classList.add('expanded');
                 sheet.style.transform = 'translateY(0)';
+            } else if (isSwipeDown && isExpanded) {
+                // Swipe down - collapse
+                console.log('✅ Collapsing sheet');
+                sheet.classList.remove('expanded');
+                sheet.style.transform = 'translateY(calc(100% - 80px))';
             } else {
                 // Return to current state
-                if (sheet.classList.contains('expanded')) {
+                console.log('↩️ Returning to current state');
+                if (isExpanded) {
                     sheet.style.transform = 'translateY(0)';
                 } else {
                     sheet.style.transform = 'translateY(calc(100% - 80px))';
@@ -339,8 +363,8 @@ class MobileFloorPlanApp {
             }
         };
 
-        // Make both handle and tab area swipeable
-        const swipeAreas = [handle, toolTabs].filter(el => el);
+        // Make handle, tabs, and header swipeable for maximum touch area
+        const swipeAreas = [handle, toolTabs, sheetHeader].filter(el => el);
         
         swipeAreas.forEach(area => {
             // Touch events - NOT passive so we can preventDefault
@@ -365,7 +389,9 @@ class MobileFloorPlanApp {
         document.querySelectorAll('.tab-btn').forEach(btn => {
             btn.addEventListener('click', () => {
                 if (!sheet.classList.contains('expanded')) {
+                    console.log('📌 Tab clicked - expanding sheet');
                     sheet.classList.add('expanded');
+                    sheet.style.transform = 'translateY(0)';
                 }
             });
         });
