@@ -154,8 +154,13 @@ export class FloorPlanEditor {
     
     getMousePos(e) {
         const rect = this.canvas.getBoundingClientRect();
-        let x = e.clientX - rect.left;
-        let y = e.clientY - rect.top;
+        
+        // Account for any scaling between buffer and display
+        const scaleX = this.canvas.width / rect.width;
+        const scaleY = this.canvas.height / rect.height;
+        
+        let x = (e.clientX - rect.left) * scaleX;
+        let y = (e.clientY - rect.top) * scaleY;
         
         // Snap to grid if enabled
         if (this.snapToGrid && !this.shiftKeyPressed) {
