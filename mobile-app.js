@@ -61,18 +61,16 @@ class MobileFloorPlanApp {
         if (!container) return;
         
         const rect = container.getBoundingClientRect();
-        const dpr = window.devicePixelRatio || 1;
+        // DON'T use DPR for buffer size to avoid coordinate mismatch
         
         [this.canvas2D, this.canvas3D].forEach(canvas => {
             if (!canvas) return;
             
-            // CSS size
+            // CSS size and buffer size should match 1:1
             canvas.style.width = rect.width + 'px';
             canvas.style.height = rect.height + 'px';
-            
-            // Buffer size
-            canvas.width = rect.width * dpr;
-            canvas.height = rect.height * dpr;
+            canvas.width = rect.width;
+            canvas.height = rect.height;
         });
         
         // Notify Three.js renderer of size change
@@ -80,7 +78,7 @@ class MobileFloorPlanApp {
             this.threejsGenerator.renderer.setSize(rect.width, rect.height);
         }
         
-        console.log(`Canvases resized to ${rect.width}x${rect.height} (DPR: ${dpr})`);
+        console.log(`Canvases resized to ${rect.width}x${rect.height}`);
     }
 
     setupEventListeners() {
