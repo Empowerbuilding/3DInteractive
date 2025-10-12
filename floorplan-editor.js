@@ -213,6 +213,18 @@ export class FloorPlanEditor {
                 this.isDraggingPatio = true;
                 this.dragStartX = pos.x;
                 this.dragStartY = pos.y;
+                
+                // Update UI controls for selected patio
+                const patio = this.floors[this.currentFloor].patios[patioIndex];
+                const hasRoofCheckbox = document.getElementById('patio-has-roof');
+                const roofStyleSelect = document.getElementById('patio-roof-style');
+                if (hasRoofCheckbox) {
+                    hasRoofCheckbox.checked = patio.hasRoof || false;
+                }
+                if (roofStyleSelect) {
+                    roofStyleSelect.value = patio.roofStyle || 'flat';
+                }
+                
                 this.render();
                 return;
             }
@@ -586,7 +598,16 @@ export class FloorPlanEditor {
             
             // Only add if it has some size (minimum 2 feet)
             if (width > this.gridSize * 2 && height > this.gridSize * 2) {
-                this.floors[this.currentFloor].patios.push({ x, y, width, height });
+                const patio = {
+                    x,
+                    y,
+                    width,
+                    height,
+                    hasRoof: document.getElementById('patio-has-roof')?.checked || false,
+                    roofStyle: document.getElementById('patio-roof-style')?.value || 'flat',
+                    roofHeight: 8  // Default 8 feet clearance
+                };
+                this.floors[this.currentFloor].patios.push(patio);
                 console.log('Patio added:', this.floors[this.currentFloor].patios[this.floors[this.currentFloor].patios.length - 1]);
             }
             
@@ -955,6 +976,18 @@ export class FloorPlanEditor {
                 ctx.stroke();
             }
             
+            // Draw roof indicator if patio has roof
+            if (patio.hasRoof) {
+                ctx.fillStyle = 'rgba(139, 69, 19, 0.3)';
+                ctx.fillRect(patio.x + 5, patio.y + 5, patio.width - 10, patio.height - 10);
+                
+                // Add roof icon
+                ctx.fillStyle = '#654321';
+                ctx.font = '20px Arial';
+                ctx.textAlign = 'center';
+                ctx.fillText('🏠', patio.x + patio.width / 2, patio.y + patio.height / 2 - 10);
+            }
+            
             // Label
             const centerX = patio.x + patio.width / 2;
             const centerY = patio.y + patio.height / 2;
@@ -964,9 +997,9 @@ export class FloorPlanEditor {
             ctx.fillStyle = isSelected ? '#FF6B6B' : '#654321';
             ctx.font = 'bold 14px sans-serif';
             ctx.textAlign = 'center';
-            ctx.fillText('PATIO', centerX, centerY - 8);
+            ctx.fillText(patio.hasRoof ? 'COVERED PATIO' : 'PATIO', centerX, centerY + (patio.hasRoof ? 10 : -8));
             ctx.font = '12px sans-serif';
-            ctx.fillText(`${widthFeet}' × ${heightFeet}'`, centerX, centerY + 8);
+            ctx.fillText(`${widthFeet}' × ${heightFeet}'`, centerX, centerY + (patio.hasRoof ? 25 : 8));
             
             // Corner resize handles when selected
             if (isSelected) {
@@ -1530,6 +1563,26 @@ export class FloorPlanEditor {
 
     getCurrentFloorRoofOverhang() {
         return this.floors[this.currentFloor]?.roofOverhang || 1.0;
+    }
+    
+    updatePatioRoofSettings(patioIndex, hasRoof, roofStyle) {
+        const patio = this.floors[this.currentFloor].patios[patioIndex];
+        if (patio) {
+            patio.hasRoof = hasRoof;
+            patio.roofStyle = roofStyle || 'flat';
+            this.render();
+        }
+    }
+
+    getSelectedPatioRoofSettings() {
+        if (this.selectedPatio !== null) {
+            const patio = this.floors[this.currentFloor].patios[this.selectedPatio];
+            return {
+                hasRoof: patio?.hasRoof || false,
+                roofStyle: patio?.roofStyle || 'flat'
+            };
+        }
+        return { hasRoof: false, roofStyle: 'flat' };
     }
     
     updateFloorSelector() {

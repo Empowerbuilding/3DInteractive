@@ -470,6 +470,7 @@ export class ThreeJSGenerator {
             const centerX = x + width / 2;
             const centerZ = z + depth / 2;
             
+            // Patio floor/deck
             const patioGeometry = new THREE.BoxGeometry(width, 0.3, depth);
             const patioMesh = new THREE.Mesh(patioGeometry, this.materials.patio);
             patioMesh.position.set(centerX, yOffset + 0.15, centerZ);
@@ -477,7 +478,155 @@ export class ThreeJSGenerator {
             patioMesh.receiveShadow = true;
             patioMesh.userData.isBuilding = true;
             this.scene.add(patioMesh);
+            
+            // Generate roof over patio if enabled
+            if (patio.hasRoof) {
+                this.generatePatioRoof(patio, x, z, width, depth, centerX, centerZ, yOffset, feetToMeters);
+            }
         });
+    }
+    
+    generatePatioRoof(patio, x, z, width, depth, centerX, centerZ, yOffset, feetToMeters) {
+        const roofHeight = (patio.roofHeight || 8) * feetToMeters;
+        const roofStyle = patio.roofStyle || 'flat';
+        const postRadius = 0.1; // meters (about 4 inches)
+        const postHeight = roofHeight - 0.3; // Slightly lower than roof height
+        
+        // Create 4 support posts at corners
+        const postGeometry = new THREE.CylinderGeometry(postRadius, postRadius, postHeight, 8);
+        const postMaterial = new THREE.MeshStandardMaterial({ 
+            color: 0x8b4513,
+            roughness: 0.8 
+        });
+        
+        const postPositions = [
+            { x: x + 0.3, z: z + 0.3 },           // Front-left
+            { x: x + width - 0.3, z: z + 0.3 },  // Front-right
+            { x: x + 0.3, z: z + depth - 0.3 },  // Back-left
+            { x: x + width - 0.3, z: z + depth - 0.3 }  // Back-right
+        ];
+        
+        postPositions.forEach(pos => {
+            const post = new THREE.Mesh(postGeometry, postMaterial);
+            post.position.set(pos.x, yOffset + postHeight / 2, pos.z);
+            post.castShadow = true;
+            post.receiveShadow = true;
+            post.userData.isBuilding = true;
+            this.scene.add(post);
+        });
+        
+        // Generate roof based on style
+        const roofY = yOffset + postHeight;
+        const overhang = 0.5; // meters overhang
+        const roofWidth = width + (overhang * 2);
+        const roofDepth = depth + (overhang * 2);
+        
+        let roofMesh;
+        
+        if (roofStyle === 'flat') {
+            // Flat roof
+            const roofGeometry = new THREE.BoxGeometry(roofWidth, 0.2, roofDepth);
+            roofMesh = new THREE.Mesh(roofGeometry, this.materials.roof);
+            roofMesh.position.set(centerX, roofY + 0.1, centerZ);
+            
+        } else if (roofStyle === 'gable') {
+            // Gable roof
+            const ridgeHeight = 1.5; // meters (about 5 feet)
+            const ridgeAlongX = roofWidth > roofDepth;
+            const geometry = new THREE.BufferGeometry();
+            
+            let vertices;
+            if (ridgeAlongX) {
+                const halfWidth = roofWidth / 2;
+                const halfDepth = roofDepth / 2;
+                vertices = new Float32Array([
+                    // Front slope
+                    -halfWidth, ridgeHeight, 0,
+                    -halfWidth, 0, -halfDepth,
+                    halfWidth, 0, -halfDepth,
+                    -halfWidth, ridgeHeight, 0,
+                    halfWidth, 0, -halfDepth,
+                    halfWidth, ridgeHeight, 0,
+                    // Back slope
+                    -halfWidth, ridgeHeight, 0,
+                    halfWidth, 0, halfDepth,
+                    -halfWidth, 0, halfDepth,
+                    -halfWidth, ridgeHeight, 0,
+                    halfWidth, ridgeHeight, 0,
+                    halfWidth, 0, halfDepth
+                ]);
+            } else {
+                const halfWidth = roofWidth / 2;
+                const halfDepth = roofDepth / 2;
+                vertices = new Float32Array([
+                    // Left slope
+                    0, ridgeHeight, -halfDepth,
+                    -halfWidth, 0, -halfDepth,
+                    -halfWidth, 0, halfDepth,
+                    0, ridgeHeight, -halfDepth,
+                    -halfWidth, 0, halfDepth,
+                    0, ridgeHeight, halfDepth,
+                    // Right slope
+                    0, ridgeHeight, -halfDepth,
+                    halfWidth, 0, halfDepth,
+                    halfWidth, 0, -halfDepth,
+                    0, ridgeHeight, -halfDepth,
+                    0, ridgeHeight, halfDepth,
+                    halfWidth, 0, halfDepth
+                ]);
+            }
+            
+            geometry.setAttribute('position', new THREE.BufferAttribute(vertices, 3));
+            geometry.computeVertexNormals();
+            
+            const gableMaterial = this.materials.roof.clone();
+            gableMaterial.side = THREE.DoubleSide;
+            
+            roofMesh = new THREE.Mesh(geometry, gableMaterial);
+            roofMesh.position.set(centerX, roofY, centerZ);
+            
+        } else if (roofStyle === 'hip') {
+            // Hip roof
+            const ridgeHeight = 1.5; // meters
+            const geometry = new THREE.BufferGeometry();
+            const halfWidth = roofWidth / 2;
+            const halfDepth = roofDepth / 2;
+            
+            const vertices = new Float32Array([
+                // Front face
+                -halfWidth, 0, -halfDepth,
+                halfWidth, 0, -halfDepth,
+                0, ridgeHeight, 0,
+                // Right face
+                halfWidth, 0, -halfDepth,
+                halfWidth, 0, halfDepth,
+                0, ridgeHeight, 0,
+                // Back face
+                halfWidth, 0, halfDepth,
+                -halfWidth, 0, halfDepth,
+                0, ridgeHeight, 0,
+                // Left face
+                -halfWidth, 0, halfDepth,
+                -halfWidth, 0, -halfDepth,
+                0, ridgeHeight, 0
+            ]);
+            
+            geometry.setAttribute('position', new THREE.BufferAttribute(vertices, 3));
+            geometry.computeVertexNormals();
+            
+            const hipMaterial = this.materials.roof.clone();
+            hipMaterial.side = THREE.DoubleSide;
+            
+            roofMesh = new THREE.Mesh(geometry, hipMaterial);
+            roofMesh.position.set(centerX, roofY, centerZ);
+        }
+        
+        if (roofMesh) {
+            roofMesh.castShadow = true;
+            roofMesh.receiveShadow = true;
+            roofMesh.userData.isBuilding = true;
+            this.scene.add(roofMesh);
+        }
     }
     
     generateRoof(floorplanData, gridSize, feetToMeters, roofY) {
