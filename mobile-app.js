@@ -81,6 +81,12 @@ class MobileFloorPlanApp {
         // Notify Three.js renderer of size change
         if (this.threejsGenerator && this.threejsGenerator.renderer) {
             this.threejsGenerator.renderer.setSize(Math.floor(rect.width), Math.floor(rect.height), false);
+            
+            // Update camera aspect ratio for mobile screen
+            if (this.threejsGenerator.camera) {
+                this.threejsGenerator.camera.aspect = rect.width / rect.height;
+                this.threejsGenerator.camera.updateProjectionMatrix();
+            }
         }
         
         // Re-render the 2D canvas with correct dimensions
@@ -379,7 +385,23 @@ class MobileFloorPlanApp {
             // Show 3D canvas, hide 2D
             this.canvas2D.style.display = 'none';
             this.canvas3D.style.display = 'block';
+            
+            // CRITICAL: Update 3D model and camera when switching to 3D view
             this.update3DModel();
+            
+            // Give Three.js a moment to render, then reset camera
+            setTimeout(() => {
+                if (this.threejsGenerator && this.threejsGenerator.camera) {
+                    // Reset camera to a good default position
+                    this.threejsGenerator.camera.position.set(30, 30, 30);
+                    this.threejsGenerator.camera.lookAt(0, 0, 0);
+                    if (this.threejsGenerator.controls) {
+                        this.threejsGenerator.controls.target.set(0, 0, 0);
+                        this.threejsGenerator.controls.update();
+                    }
+                }
+            }, 100);
+            
             if (hint) {
                 hint.style.display = 'block';
                 // Hide hint after 3 seconds
@@ -406,7 +428,18 @@ class MobileFloorPlanApp {
         if (!this.floorPlanEditor || !this.threejsGenerator) return;
         
         const floorplanData = this.floorPlanEditor.getFloorPlanData();
+        
+        // Debug: Check if there's actually data to render
+        console.log('🔄 Updating 3D model with data:', {
+            floors: floorplanData.floors.length,
+            walls: floorplanData.floors[0]?.walls.length || 0,
+            doors: floorplanData.floors[0]?.doors.length || 0,
+            windows: floorplanData.floors[0]?.windows.length || 0
+        });
+        
         this.threejsGenerator.generate3DFromFloorplan(floorplanData);
+        
+        console.log('✅ 3D model updated');
     }
 
     updateFloorSelector() {
