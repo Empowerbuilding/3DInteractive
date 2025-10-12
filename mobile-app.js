@@ -272,11 +272,18 @@ class MobileFloorPlanApp {
         sheet.classList.remove('expanded');
 
         const handle = sheet.querySelector('.sheet-handle');
+        const toolTabs = sheet.querySelector('.tool-tabs');
         let startY = 0;
         let currentY = 0;
         let isDragging = false;
 
         const startDrag = (e) => {
+            // Don't start drag if clicking on a button
+            if (e.target.closest('.tab-btn, .sheet-close')) {
+                return;
+            }
+            
+            e.preventDefault();
             startY = e.type.includes('mouse') ? e.clientY : e.touches[0].clientY;
             isDragging = true;
             sheet.style.transition = 'none';
@@ -285,6 +292,7 @@ class MobileFloorPlanApp {
         const doDrag = (e) => {
             if (!isDragging) return;
             
+            e.preventDefault();
             currentY = e.type.includes('mouse') ? e.clientY : e.touches[0].clientY;
             const deltaY = currentY - startY;
             
@@ -331,17 +339,22 @@ class MobileFloorPlanApp {
             }
         };
 
-        // Touch events
-        if (handle) {
-            handle.addEventListener('touchstart', startDrag, { passive: true });
-            document.addEventListener('touchmove', doDrag, { passive: true });
-            document.addEventListener('touchend', endDrag);
+        // Make both handle and tab area swipeable
+        const swipeAreas = [handle, toolTabs].filter(el => el);
+        
+        swipeAreas.forEach(area => {
+            // Touch events - NOT passive so we can preventDefault
+            area.addEventListener('touchstart', startDrag, { passive: false });
+            area.addEventListener('touchmove', doDrag, { passive: false });
+            area.addEventListener('touchend', endDrag, { passive: false });
 
             // Mouse events for testing on desktop
-            handle.addEventListener('mousedown', startDrag);
-            document.addEventListener('mousemove', doDrag);
-            document.addEventListener('mouseup', endDrag);
-        }
+            area.addEventListener('mousedown', startDrag);
+        });
+        
+        // Document-level listeners for when dragging continues outside the area
+        document.addEventListener('mousemove', doDrag);
+        document.addEventListener('mouseup', endDrag);
 
         // Close button
         sheet.querySelector('.sheet-close')?.addEventListener('click', () => {
