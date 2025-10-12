@@ -224,7 +224,184 @@
     </div>
   </div>
 
-  <!-- Application Script -->
+  <!-- MOBILE LAYOUT (shown only on screens < 1025px) -->
+  <div class="mobile-layout">
+    <!-- Top Header Bar -->
+    <div class="mobile-header">
+      <button id="mobile-menu-btn" class="mobile-icon-btn" aria-label="Open Menu">
+        <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M3 12h18M3 6h18M3 18h18"/>
+        </svg>
+      </button>
+      <h1 class="mobile-title">Floor Planner</h1>
+      <button id="mobile-options-btn" class="mobile-icon-btn" aria-label="Options">
+        <svg width="24" height="24" fill="currentColor">
+          <circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/>
+        </svg>
+      </button>
+    </div>
+
+    <!-- Canvas Container (Full Screen) -->
+    <div class="mobile-canvas-container">
+      <canvas id="mobile-canvas"></canvas>
+      
+      <!-- 2D/3D View Toggle (Floating) -->
+      <div class="view-switcher">
+        <button class="view-btn active" data-view="2d">
+          <span>📐</span>
+          <span>2D Plan</span>
+        </button>
+        <button class="view-btn" data-view="3d">
+          <span>🏠</span>
+          <span>3D View</span>
+        </button>
+      </div>
+
+      <!-- 3D Controls Hint -->
+      <div class="controls-hint" style="display: none;">
+        <p>👆 Pinch to zoom • Drag to rotate</p>
+      </div>
+    </div>
+
+    <!-- Bottom Tool Sheet -->
+    <div class="bottom-sheet" id="mobile-tools-sheet">
+      <div class="sheet-handle"></div>
+      
+      <div class="sheet-header">
+        <h3 class="sheet-title">Tools</h3>
+        <button class="sheet-close" aria-label="Close">✕</button>
+      </div>
+
+      <!-- Tool Tabs -->
+      <div class="tool-tabs">
+        <button class="tab-btn active" data-tab="draw">
+          <span class="tab-icon">✏️</span>
+          <span class="tab-label">Draw</span>
+        </button>
+        <button class="tab-btn" data-tab="doors">
+          <span class="tab-icon">🚪</span>
+          <span class="tab-label">Doors</span>
+        </button>
+        <button class="tab-btn" data-tab="settings">
+          <span class="tab-icon">⚙️</span>
+          <span class="tab-label">Settings</span>
+        </button>
+      </div>
+
+      <!-- Tab Content -->
+      <div class="tab-content-container">
+        <!-- DRAW TAB -->
+        <div class="tab-content active" data-content="draw">
+          <div class="mobile-tool-grid">
+            <button class="mobile-tool-btn active" data-mode="draw">
+              <span class="tool-icon-large">✏️</span>
+              <span class="tool-name">Draw Walls</span>
+            </button>
+            <button class="mobile-tool-btn" data-mode="edit">
+              <span class="tool-icon-large">✂️</span>
+              <span class="tool-name">Edit</span>
+            </button>
+            <button class="mobile-tool-btn" data-mode="patio">
+              <span class="tool-icon-large">🏡</span>
+              <span class="tool-name">Add Patio</span>
+            </button>
+          </div>
+          <button id="mobile-clear-plan" class="mobile-btn-danger full-width">Clear Plan</button>
+          <button id="mobile-undo" class="mobile-btn-secondary full-width">Undo Last</button>
+        </div>
+
+        <!-- DOORS TAB -->
+        <div class="tab-content" data-content="doors">
+          <button class="mobile-tool-btn-wide active" data-mode="door">
+            <span>🚪</span> Place Doors
+          </button>
+          <div class="mobile-input-group">
+            <label>Door Style:</label>
+            <select id="mobile-door-style" class="mobile-select">
+              <option value="swing">Swing Door (3')</option>
+              <option value="pocket">Pocket Door (3')</option>
+              <option value="bifold">Bifold Door (4')</option>
+              <option value="double">Double Door (6')</option>
+            </select>
+          </div>
+          <button class="mobile-tool-btn-wide" data-mode="window">
+            <span>🪟</span> Place Windows
+          </button>
+        </div>
+
+        <!-- SETTINGS TAB -->
+        <div class="tab-content" data-content="settings">
+          <div class="mobile-input-group">
+            <label>Floor:</label>
+            <select id="mobile-floor-selector" class="mobile-select">
+              <option value="0">Floor 1</option>
+            </select>
+          </div>
+          <button id="mobile-add-floor" class="mobile-btn-secondary full-width">+ Add Floor</button>
+          
+          <div class="mobile-input-group">
+            <label>Wall Height: <span id="mobile-wall-height-value">8 ft</span></label>
+            <input type="range" id="mobile-wall-height" min="8" max="12" step="0.5" value="8" class="mobile-slider">
+          </div>
+
+          <div class="mobile-checkbox-group">
+            <label class="mobile-checkbox-label">
+              <input type="checkbox" id="mobile-show-roof" checked>
+              <span>Show Roof</span>
+            </label>
+            <label class="mobile-checkbox-label">
+              <input type="checkbox" id="mobile-show-floor-overlay" checked>
+              <span>Show Floor Below</span>
+            </label>
+          </div>
+
+          <div class="mobile-input-group">
+            <label>Roof Style:</label>
+            <select id="mobile-roof-style" class="mobile-select">
+              <option value="hip">Hip Roof</option>
+              <option value="gable">Gable Roof</option>
+              <option value="flat">Flat Roof</option>
+            </select>
+          </div>
+
+          <button id="mobile-export-design" class="mobile-btn-secondary full-width">📥 Export Design</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Floating Action Button -->
+    <button class="fab" id="mobile-update-3d" aria-label="Update 3D Model">
+      <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2"/>
+      </svg>
+      <span>Update</span>
+    </button>
+
+    <!-- Side Menu -->
+    <div class="side-menu" id="mobile-side-menu">
+      <div class="side-menu-header">
+        <h2>Menu</h2>
+        <button class="side-menu-close" aria-label="Close Menu">✕</button>
+      </div>
+      <nav class="side-menu-nav">
+        <button class="menu-item" data-action="new-plan">
+          <span>📄</span> New Plan
+        </button>
+        <button class="menu-item" data-action="export">
+          <span>📥</span> Export Design
+        </button>
+        <button class="menu-item" data-action="help">
+          <span>❓</span> Help
+        </button>
+      </nav>
+    </div>
+
+    <!-- Overlay -->
+    <div class="mobile-overlay" id="mobile-overlay"></div>
+  </div>
+
+  <!-- Application Scripts -->
   <script type="module" src="app.js"></script>
+  <script type="module" src="mobile-app.js"></script>
 </body>
 </html>
