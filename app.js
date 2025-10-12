@@ -53,9 +53,45 @@ class FloorPlanApp {
             }
         });
         
+        // Floor selector change - update all current floor settings
         document.getElementById('floor-selector')?.addEventListener('change', (e) => {
             if (this.floorPlanEditor) {
                 this.floorPlanEditor.switchFloor(parseInt(e.target.value));
+                
+                // Update wall height slider
+                const currentHeight = this.floorPlanEditor.getCurrentFloorWallHeight();
+                const heightSlider = document.getElementById('wall-height');
+                if (heightSlider) {
+                    heightSlider.value = currentHeight;
+                    document.getElementById('wall-height-value').textContent = `${currentHeight}ft`;
+                }
+                
+                // Update roof settings
+                const hasRoof = this.floorPlanEditor.getCurrentFloorHasRoof();
+                const hasRoofCheckbox = document.getElementById('floor-has-roof');
+                if (hasRoofCheckbox) {
+                    hasRoofCheckbox.checked = hasRoof;
+                }
+                
+                const roofStyle = this.floorPlanEditor.getCurrentFloorRoofStyle();
+                const roofStyleSelect = document.getElementById('roof-style');
+                if (roofStyleSelect) {
+                    roofStyleSelect.value = roofStyle;
+                }
+                
+                const roofPitch = this.floorPlanEditor.getCurrentFloorRoofPitch();
+                const pitchSlider = document.getElementById('roof-pitch');
+                if (pitchSlider) {
+                    pitchSlider.value = roofPitch;
+                    document.getElementById('roof-pitch-value').textContent = `${roofPitch}:12`;
+                }
+                
+                const roofOverhang = this.floorPlanEditor.getCurrentFloorRoofOverhang();
+                const overhangSlider = document.getElementById('roof-overhang');
+                if (overhangSlider) {
+                    overhangSlider.value = roofOverhang;
+                    document.getElementById('roof-overhang-value').textContent = `${roofOverhang} ft`;
+                }
             }
         });
         
@@ -73,16 +109,25 @@ class FloorPlanApp {
         // 3D CONTROLS
         
         // Wall Height Slider
+        // Wall Height Slider - now affects current floor only
         document.getElementById('wall-height')?.addEventListener('input', (e) => {
             const value = parseFloat(e.target.value);
             document.getElementById('wall-height-value').textContent = `${value}ft`;
-            if (this.threejsGenerator) {
-                this.threejsGenerator.setWallHeight(value);
+            if (this.floorPlanEditor) {
+                this.floorPlanEditor.setCurrentFloorWallHeight(value);
                 this.update3DModel();
             }
         });
         
-        // Show Roof Checkbox
+        // Floor Has Roof Checkbox
+        document.getElementById('floor-has-roof')?.addEventListener('change', (e) => {
+            if (this.floorPlanEditor) {
+                this.floorPlanEditor.setCurrentFloorHasRoof(e.target.checked);
+                this.update3DModel();
+            }
+        });
+        
+        // Show Roof Checkbox (Global visibility toggle)
         document.getElementById('show-roof')?.addEventListener('change', (e) => {
             if (this.threejsGenerator) {
                 this.threejsGenerator.setShowRoof(e.target.checked);
@@ -90,30 +135,30 @@ class FloorPlanApp {
             }
         });
         
-        // Roof Style Dropdown
+        // Roof Style Dropdown - per floor
         document.getElementById('roof-style')?.addEventListener('change', (e) => {
-            if (this.threejsGenerator) {
-                this.threejsGenerator.setRoofStyle(e.target.value);
+            if (this.floorPlanEditor) {
+                this.floorPlanEditor.setCurrentFloorRoofStyle(e.target.value);
                 this.update3DModel();
             }
         });
         
-        // Roof Pitch Slider
+        // Roof Pitch Slider - per floor
         document.getElementById('roof-pitch')?.addEventListener('input', (e) => {
             const value = parseInt(e.target.value);
             document.getElementById('roof-pitch-value').textContent = `${value}:12`;
-            if (this.threejsGenerator) {
-                this.threejsGenerator.setRoofPitch(value);
+            if (this.floorPlanEditor) {
+                this.floorPlanEditor.setCurrentFloorRoofPitch(value);
                 this.update3DModel();
             }
         });
         
-        // Roof Overhang Slider
+        // Roof Overhang Slider - per floor
         document.getElementById('roof-overhang')?.addEventListener('input', (e) => {
             const value = parseFloat(e.target.value);
             document.getElementById('roof-overhang-value').textContent = `${value.toFixed(1)} ft`;
-            if (this.threejsGenerator) {
-                this.threejsGenerator.setRoofOverhang(value);
+            if (this.floorPlanEditor) {
+                this.floorPlanEditor.setCurrentFloorRoofOverhang(value);
                 this.update3DModel();
             }
         });
@@ -171,7 +216,7 @@ class FloorPlanApp {
                         if (this.floorPlanEditor) {
                             this.floorPlanEditor.setMode('view');  // Set to neutral view mode
                         }
-                    } else {
+            } else {
                         // Activate this button and deactivate others
                         setActiveMode(buttonId);
                         if (this.floorPlanEditor) {

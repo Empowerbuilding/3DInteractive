@@ -14,7 +14,12 @@ export class FloorPlanEditor {
                 walls: [],
                 doors: [],
                 windows: [],
-                patios: []
+                patios: [],
+                wallHeight: 8,  // Default wall height per floor (feet)
+                hasRoof: false,  // Does this floor have its own roof?
+                roofStyle: 'hip',
+                roofPitch: 6,
+                roofOverhang: 1.0
             }
         ];
         this.currentFloor = 0; // Index of current floor being edited
@@ -1447,7 +1452,13 @@ export class FloorPlanEditor {
             name: `Floor ${newFloorNumber}`,
             walls: [],
             doors: [],
-            windows: []
+            windows: [],
+            patios: [],
+            wallHeight: 8,  // Default wall height for new floor
+            hasRoof: false,  // New floors don't have roof by default
+            roofStyle: 'hip',
+            roofPitch: 6,
+            roofOverhang: 1.0
         });
         
         // Switch to the new floor
@@ -1467,6 +1478,58 @@ export class FloorPlanEditor {
             this.updateMeasurements();
             console.log(`Switched to Floor ${floorIndex + 1}`);
         }
+    }
+    
+    setCurrentFloorWallHeight(height) {
+        if (this.floors[this.currentFloor]) {
+            this.floors[this.currentFloor].wallHeight = height;
+            console.log(`Floor ${this.currentFloor + 1} wall height set to ${height} ft`);
+        }
+    }
+    
+    getCurrentFloorWallHeight() {
+        return this.floors[this.currentFloor]?.wallHeight || 8;
+    }
+    
+    setCurrentFloorHasRoof(hasRoof) {
+        if (this.floors[this.currentFloor]) {
+            this.floors[this.currentFloor].hasRoof = hasRoof;
+            console.log(`Floor ${this.currentFloor + 1} hasRoof set to ${hasRoof}`);
+        }
+    }
+
+    getCurrentFloorHasRoof() {
+        return this.floors[this.currentFloor]?.hasRoof || false;
+    }
+
+    setCurrentFloorRoofStyle(style) {
+        if (this.floors[this.currentFloor]) {
+            this.floors[this.currentFloor].roofStyle = style;
+        }
+    }
+
+    getCurrentFloorRoofStyle() {
+        return this.floors[this.currentFloor]?.roofStyle || 'hip';
+    }
+
+    setCurrentFloorRoofPitch(pitch) {
+        if (this.floors[this.currentFloor]) {
+            this.floors[this.currentFloor].roofPitch = pitch;
+        }
+    }
+
+    getCurrentFloorRoofPitch() {
+        return this.floors[this.currentFloor]?.roofPitch || 6;
+    }
+
+    setCurrentFloorRoofOverhang(overhang) {
+        if (this.floors[this.currentFloor]) {
+            this.floors[this.currentFloor].roofOverhang = overhang;
+        }
+    }
+
+    getCurrentFloorRoofOverhang() {
+        return this.floors[this.currentFloor]?.roofOverhang || 1.0;
     }
     
     updateFloorSelector() {

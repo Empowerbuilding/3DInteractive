@@ -168,8 +168,10 @@ export class ThreeJSGenerator {
         const gridSize = floorplanData.gridSize || 20; // pixels per foot
         const feetToMeters = 0.3048; // conversion factor
         
+        let cumulativeHeight = 0; // Track cumulative height for stacking floors
+        
         floorplanData.floors.forEach((floor, floorIndex) => {
-            const yOffset = floorIndex * this.wallHeight * feetToMeters;
+            const yOffset = cumulativeHeight;
             
             // Generate walls for this floor
             this.generateWalls(floor, floorIndex, gridSize, feetToMeters, yOffset);
@@ -179,13 +181,18 @@ export class ThreeJSGenerator {
             
             // Generate patios
             this.generatePatios(floor, gridSize, feetToMeters, yOffset);
+            
+            // Add this floor's height to cumulative total
+            const floorWallHeight = (floor.wallHeight || 8) * feetToMeters;
+            cumulativeHeight += floorWallHeight;
+            
+            // Generate roof for THIS floor if it has one
+            if (this.showRoof && floor.hasRoof && floor.walls.length > 0) {
+                const roofY = cumulativeHeight;
+                this.generateRoofForFloor(floor, gridSize, feetToMeters, roofY);
+                this.generateGableEndWallsForFloor(floor, gridSize, feetToMeters, roofY);
+            }
         });
-        
-        // Generate roof
-        if (this.showRoof && floorplanData.floors.length > 0) {
-            this.generateRoof(floorplanData, gridSize, feetToMeters);
-            this.generateGableEndWalls(floorplanData, gridSize, feetToMeters);
-        }
         
         // Update stats
         this.updateStats(floorplanData);
@@ -194,6 +201,10 @@ export class ThreeJSGenerator {
     }
     
     generateWalls(floor, floorIndex, gridSize, feetToMeters, yOffset) {
+        // Get wall height for THIS specific floor
+        const wallHeight = floor.wallHeight || 8; // Default to 8 if not set
+        const wallHeightMeters = wallHeight * feetToMeters;
+        
         floor.walls.forEach((wall, wallIndex) => {
             const startX = (wall.startX / gridSize) * feetToMeters;
             const startZ = (wall.startY / gridSize) * feetToMeters;
@@ -216,10 +227,10 @@ export class ThreeJSGenerator {
                 // Simple solid wall
                 this.createWallSegment(
                     length, 
-                    this.wallHeight * feetToMeters, 
+                    wallHeightMeters,  // Use floor-specific height
                     this.wallThickness * feetToMeters,
                     centerX,
-                    yOffset + (this.wallHeight * feetToMeters) / 2,
+                    yOffset + wallHeightMeters / 2,
                     centerZ,
                     angle
                 );
@@ -229,7 +240,8 @@ export class ThreeJSGenerator {
                     wall, wallIndex, floor, length, angle, 
                     startX, startZ, dx, dz, 
                     yOffset, gridSize, feetToMeters,
-                    doorsOnWall, windowsOnWall
+                    doorsOnWall, windowsOnWall,
+                    wallHeightMeters  // Pass wall height
                 );
             }
         });
@@ -246,7 +258,7 @@ export class ThreeJSGenerator {
         this.scene.add(mesh);
     }
     
-    createWallWithOpenings(wall, wallIndex, floor, length, angle, startX, startZ, dx, dz, yOffset, gridSize, feetToMeters, doorsOnWall, windowsOnWall) {
+    createWallWithOpenings(wall, wallIndex, floor, length, angle, startX, startZ, dx, dz, yOffset, gridSize, feetToMeters, doorsOnWall, windowsOnWall, wallHeightMeters) {
         const segments = [];
         let lastPos = 0;
         
@@ -280,10 +292,10 @@ export class ThreeJSGenerator {
                 
                 this.createWallSegment(
                     segmentLength,
-                    this.wallHeight * feetToMeters,
+                    wallHeightMeters,
                     this.wallThickness * feetToMeters,
                     segmentX,
-                    yOffset + (this.wallHeight * feetToMeters) / 2,
+                    yOffset + wallHeightMeters / 2,
                     segmentZ,
                     angle
                 );
@@ -296,7 +308,7 @@ export class ThreeJSGenerator {
                 const aboveCenter = (openingStart + openingEnd) / 2;
                 const aboveX = startX + dx * aboveCenter;
                 const aboveZ = startZ + dz * aboveCenter;
-                const aboveHeight = (this.wallHeight * feetToMeters) - opening.height;
+                const aboveHeight = wallHeightMeters - opening.height;
                 
                 // Create wall above door (if there's space)
                 if (aboveHeight > 0.1) {  // Only create if height is meaningful
@@ -335,7 +347,7 @@ export class ThreeJSGenerator {
                 const aboveCenter = (openingStart + openingEnd) / 2;
                 const aboveX = startX + dx * aboveCenter;
                 const aboveZ = startZ + dz * aboveCenter;
-                const aboveHeight = (this.wallHeight * feetToMeters) - (opening.bottomOffset + opening.height);
+                const aboveHeight = wallHeightMeters - (opening.bottomOffset + opening.height);
                 
                 this.createWallSegment(
                     aboveLength,
@@ -389,10 +401,10 @@ export class ThreeJSGenerator {
             
             this.createWallSegment(
                 segmentLength,
-                this.wallHeight * feetToMeters,
+                wallHeightMeters,
                 this.wallThickness * feetToMeters,
                 segmentX,
-                yOffset + (this.wallHeight * feetToMeters) / 2,
+                yOffset + wallHeightMeters / 2,
                 segmentZ,
                 angle
             );
@@ -400,24 +412,50 @@ export class ThreeJSGenerator {
     }
     
     generateFloorsAndCeilings(floor, floorIndex, gridSize, feetToMeters, yOffset, totalFloors) {
-        // Floor plane
-        const floorGeometry = new THREE.PlaneGeometry(100, 100);
-        const floorMesh = new THREE.Mesh(floorGeometry, this.materials.floor);
-        floorMesh.rotation.x = -Math.PI / 2;
-        floorMesh.position.y = yOffset;
-        floorMesh.receiveShadow = true;
-        floorMesh.userData.isBuilding = true;
-        this.scene.add(floorMesh);
+        // Calculate bounding box from walls for this floor
+        if (floor.walls.length === 0) return;
         
-        // Ceiling for all but top floor
-        if (floorIndex < totalFloors - 1) {
-            const ceilingMesh = new THREE.Mesh(floorGeometry, this.materials.ceiling);
-            ceilingMesh.rotation.x = Math.PI / 2;
-            ceilingMesh.position.y = yOffset + this.wallHeight * feetToMeters;
-            ceilingMesh.receiveShadow = true;
-            ceilingMesh.userData.isBuilding = true;
-            this.scene.add(ceilingMesh);
+        let minX = Infinity, maxX = -Infinity, minZ = Infinity, maxZ = -Infinity;
+        
+        floor.walls.forEach(wall => {
+            const x1 = (wall.startX / gridSize) * feetToMeters;
+            const z1 = (wall.startY / gridSize) * feetToMeters;
+            const x2 = (wall.endX / gridSize) * feetToMeters;
+            const z2 = (wall.endY / gridSize) * feetToMeters;
+            
+            minX = Math.min(minX, x1, x2);
+            maxX = Math.max(maxX, x1, x2);
+            minZ = Math.min(minZ, z1, z2);
+            maxZ = Math.max(maxZ, z1, z2);
+        });
+        
+        // Add small margin
+        const margin = 0.5; // meters
+        minX -= margin;
+        maxX += margin;
+        minZ -= margin;
+        maxZ += margin;
+        
+        const width = maxX - minX;
+        const depth = maxZ - minZ;
+        const centerX = (minX + maxX) / 2;
+        const centerZ = (minZ + maxZ) / 2;
+        
+        const floorThickness = 0.15; // Thinner slab (about 6 inches)
+        
+        // ONLY create a floor slab for the ground floor
+        if (floorIndex === 0) {
+            const floorGeometry = new THREE.BoxGeometry(width, floorThickness, depth);
+            const floorMesh = new THREE.Mesh(floorGeometry, this.materials.floor);
+            floorMesh.position.set(centerX, yOffset, centerZ);
+            floorMesh.receiveShadow = true;
+            floorMesh.castShadow = true;
+            floorMesh.userData.isBuilding = true;
+            this.scene.add(floorMesh);
         }
+        
+        // Don't create any intermediate floor slabs
+        // The walls define the structure, and the roof caps it off
     }
     
     generatePatios(floor, gridSize, feetToMeters, yOffset) {
@@ -442,9 +480,8 @@ export class ThreeJSGenerator {
         });
     }
     
-    generateRoof(floorplanData, gridSize, feetToMeters) {
+    generateRoof(floorplanData, gridSize, feetToMeters, roofY) {
         const topFloor = floorplanData.floors[floorplanData.floors.length - 1];
-        const roofY = (floorplanData.floors.length - 1) * this.wallHeight * feetToMeters + this.wallHeight * feetToMeters;
         
         // Calculate bounding box
         let minX = Infinity, maxX = -Infinity, minZ = Infinity, maxZ = -Infinity;
@@ -620,11 +657,10 @@ export class ThreeJSGenerator {
         }
     }
     
-    generateGableEndWalls(floorplanData, gridSize, feetToMeters) {
+    generateGableEndWalls(floorplanData, gridSize, feetToMeters, roofY) {
         if (this.roofStyle !== 'gable') return;
         
         const topFloor = floorplanData.floors[floorplanData.floors.length - 1];
-        const roofY = (floorplanData.floors.length - 1) * this.wallHeight * feetToMeters + this.wallHeight * feetToMeters;
         
         // Calculate bounding box to determine ridge orientation
         let minX = Infinity, maxX = -Infinity, minZ = Infinity, maxZ = -Infinity;
@@ -698,6 +734,229 @@ export class ThreeJSGenerator {
                 0, triangleHeight, 0,
                 
                 // Back face (for double-sided appearance)
+                -halfLength, 0, 0,
+                0, triangleHeight, 0,
+                halfLength, 0, 0
+            ]);
+            
+            geometry.setAttribute('position', new THREE.BufferAttribute(vertices, 3));
+            geometry.computeVertexNormals();
+            
+            const gableMesh = new THREE.Mesh(geometry, this.materials.wall);
+            gableMesh.position.set(centerX, roofY, centerZ);
+            gableMesh.rotation.y = angle;
+            gableMesh.castShadow = true;
+            gableMesh.receiveShadow = true;
+            gableMesh.userData.isBuilding = true;
+            
+            this.scene.add(gableMesh);
+        });
+    }
+    
+    generateRoofForFloor(floor, gridSize, feetToMeters, roofY) {
+        // Get roof settings from this floor's data
+        const roofStyle = floor.roofStyle || 'hip';
+        const roofPitch = floor.roofPitch || 6;
+        const roofOverhang = floor.roofOverhang || 1.0;
+        
+        // Calculate bounding box for THIS floor only
+        let minX = Infinity, maxX = -Infinity, minZ = Infinity, maxZ = -Infinity;
+        floor.walls.forEach(wall => {
+            const x1 = (wall.startX / gridSize) * feetToMeters;
+            const z1 = (wall.startY / gridSize) * feetToMeters;
+            const x2 = (wall.endX / gridSize) * feetToMeters;
+            const z2 = (wall.endY / gridSize) * feetToMeters;
+            minX = Math.min(minX, x1, x2);
+            maxX = Math.max(maxX, x1, x2);
+            minZ = Math.min(minZ, z1, z2);
+            maxZ = Math.max(maxZ, z1, z2);
+        });
+        
+        // Add overhang to dimensions
+        const overhangMeters = roofOverhang * feetToMeters;
+        const roofWidth = (maxX - minX) + (2 * overhangMeters);
+        const roofDepth = (maxZ - minZ) + (2 * overhangMeters);
+        const centerX = (minX + maxX) / 2;
+        const centerZ = (minZ + maxZ) / 2;
+        
+        // Calculate roof height from pitch
+        const roofHeight = (Math.max(roofWidth, roofDepth) / 2) * (roofPitch / 12);
+        
+        let roofMesh;
+        
+        if (roofStyle === 'flat') {
+            // Flat roof
+            const roofGeometry = new THREE.BoxGeometry(roofWidth, 0.3, roofDepth);
+            roofMesh = new THREE.Mesh(roofGeometry, this.materials.roof);
+            roofMesh.position.set(centerX, roofY + 0.15, centerZ);
+            
+        } else if (roofStyle === 'hip') {
+            // Hip roof - rectangular pyramid
+            const geometry = new THREE.BufferGeometry();
+            const halfWidth = roofWidth / 2;
+            const halfDepth = roofDepth / 2;
+            
+            const vertices = new Float32Array([
+                // Front face
+                -halfWidth, 0, -halfDepth,
+                halfWidth, 0, -halfDepth,
+                0, roofHeight, 0,
+                // Right face
+                halfWidth, 0, -halfDepth,
+                halfWidth, 0, halfDepth,
+                0, roofHeight, 0,
+                // Back face
+                halfWidth, 0, halfDepth,
+                -halfWidth, 0, halfDepth,
+                0, roofHeight, 0,
+                // Left face
+                -halfWidth, 0, halfDepth,
+                -halfWidth, 0, -halfDepth,
+                0, roofHeight, 0
+            ]);
+            
+            geometry.setAttribute('position', new THREE.BufferAttribute(vertices, 3));
+            geometry.computeVertexNormals();
+            
+            const hipRoofMaterial = this.materials.roof.clone();
+            hipRoofMaterial.side = THREE.DoubleSide;
+            
+            roofMesh = new THREE.Mesh(geometry, hipRoofMaterial);
+            roofMesh.position.set(centerX, roofY, centerZ);
+            
+        } else if (roofStyle === 'gable') {
+            // Gable roof
+            const ridgeAlongX = roofWidth > roofDepth;
+            const geometry = new THREE.BufferGeometry();
+            
+            let vertices;
+            if (ridgeAlongX) {
+                const halfWidth = roofWidth / 2;
+                const halfDepth = roofDepth / 2;
+                vertices = new Float32Array([
+                    // Front slope
+                    -halfWidth, roofHeight, 0,
+                    -halfWidth, 0, -halfDepth,
+                    halfWidth, 0, -halfDepth,
+                    -halfWidth, roofHeight, 0,
+                    halfWidth, 0, -halfDepth,
+                    halfWidth, roofHeight, 0,
+                    // Back slope
+                    -halfWidth, roofHeight, 0,
+                    halfWidth, 0, halfDepth,
+                    -halfWidth, 0, halfDepth,
+                    -halfWidth, roofHeight, 0,
+                    halfWidth, roofHeight, 0,
+                    halfWidth, 0, halfDepth
+                ]);
+            } else {
+                const halfWidth = roofWidth / 2;
+                const halfDepth = roofDepth / 2;
+                vertices = new Float32Array([
+                    // Left slope
+                    0, roofHeight, -halfDepth,
+                    -halfWidth, 0, -halfDepth,
+                    -halfWidth, 0, halfDepth,
+                    0, roofHeight, -halfDepth,
+                    -halfWidth, 0, halfDepth,
+                    0, roofHeight, halfDepth,
+                    // Right slope
+                    0, roofHeight, -halfDepth,
+                    halfWidth, 0, halfDepth,
+                    halfWidth, 0, -halfDepth,
+                    0, roofHeight, -halfDepth,
+                    0, roofHeight, halfDepth,
+                    halfWidth, 0, halfDepth
+                ]);
+            }
+            
+            geometry.setAttribute('position', new THREE.BufferAttribute(vertices, 3));
+            geometry.computeVertexNormals();
+            
+            const gableRoofMaterial = this.materials.roof.clone();
+            gableRoofMaterial.side = THREE.DoubleSide;
+            
+            roofMesh = new THREE.Mesh(geometry, gableRoofMaterial);
+            roofMesh.position.set(centerX, roofY, centerZ);
+        }
+        
+        if (roofMesh) {
+            roofMesh.castShadow = true;
+            roofMesh.receiveShadow = true;
+            roofMesh.userData.isBuilding = true;
+            this.scene.add(roofMesh);
+        }
+    }
+    
+    generateGableEndWallsForFloor(floor, gridSize, feetToMeters, roofY) {
+        const roofStyle = floor.roofStyle || 'hip';
+        if (roofStyle !== 'gable') return;
+        
+        const roofPitch = floor.roofPitch || 6;
+        const roofOverhang = floor.roofOverhang || 1.0;
+        
+        // Calculate bounding box
+        let minX = Infinity, maxX = -Infinity, minZ = Infinity, maxZ = -Infinity;
+        floor.walls.forEach(wall => {
+            const x1 = (wall.startX / gridSize) * feetToMeters;
+            const z1 = (wall.startY / gridSize) * feetToMeters;
+            const x2 = (wall.endX / gridSize) * feetToMeters;
+            const z2 = (wall.endY / gridSize) * feetToMeters;
+            minX = Math.min(minX, x1, x2);
+            maxX = Math.max(maxX, x1, x2);
+            minZ = Math.min(minZ, z1, z2);
+            maxZ = Math.max(maxZ, z1, z2);
+        });
+        
+        const overhangMeters = roofOverhang * feetToMeters;
+        const roofWidth = (maxX - minX) + (2 * overhangMeters);
+        const roofDepth = (maxZ - minZ) + (2 * overhangMeters);
+        const roofHeight = (Math.max(roofWidth, roofDepth) / 2) * (roofPitch / 12);
+        
+        const ridgeAlongX = roofWidth > roofDepth;
+        
+        // Generate gable end walls
+        floor.walls.forEach((wall, wallIndex) => {
+            const startX = (wall.startX / gridSize) * feetToMeters;
+            const startZ = (wall.startY / gridSize) * feetToMeters;
+            const endX = (wall.endX / gridSize) * feetToMeters;
+            const endZ = (wall.endY / gridSize) * feetToMeters;
+            
+            const dx = endX - startX;
+            const dz = endZ - startZ;
+            const length = Math.sqrt(dx * dx + dz * dz);
+            const angle = Math.atan2(dz, dx);
+            
+            const isGableEnd = ridgeAlongX ? 
+                (Math.abs(Math.cos(angle)) < 0.5) : 
+                (Math.abs(Math.sin(angle)) < 0.5);
+            
+            if (!isGableEnd) return;
+            
+            const centerX = (startX + endX) / 2;
+            const centerZ = (startZ + endZ) / 2;
+            
+            const distanceFromCenter = ridgeAlongX ? 
+                Math.abs(centerZ - (minZ + maxZ) / 2) : 
+                Math.abs(centerX - (minX + maxX) / 2);
+            
+            const buildingHalfSpan = ridgeAlongX ? 
+                (maxZ - minZ) / 2 : 
+                (maxX - minX) / 2;
+            
+            const triangleHeight = roofHeight * (1 - (distanceFromCenter / buildingHalfSpan));
+            
+            if (triangleHeight <= 0) return;
+            
+            const geometry = new THREE.BufferGeometry();
+            const halfLength = length / 2;
+            
+            const vertices = new Float32Array([
+                // Front face
+                -halfLength, 0, 0,
+                halfLength, 0, 0,
+                0, triangleHeight, 0,
+                // Back face
                 -halfLength, 0, 0,
                 0, triangleHeight, 0,
                 halfLength, 0, 0
