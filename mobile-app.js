@@ -36,8 +36,22 @@ class MobileFloorPlanApp {
         
         console.log('📱 Initializing mobile app...');
         
-        // CRITICAL: Set canvas sizes BEFORE initializing editor
-        this.resizeCanvas();
+        // CRITICAL: Set canvas sizes BEFORE initializing anything
+        const container = document.querySelector('.mobile-canvas-container');
+        if (container) {
+            const rect = container.getBoundingClientRect();
+            
+            // Set both canvases to proper size IMMEDIATELY
+            [this.canvas2D, this.canvas3D].forEach(canvas => {
+                if (!canvas) return;
+                canvas.style.width = '100%';
+                canvas.style.height = '100%';
+                canvas.width = Math.floor(rect.width);
+                canvas.height = Math.floor(rect.height);
+            });
+            
+            console.log(`✅ Canvases pre-sized to ${Math.floor(rect.width)}x${Math.floor(rect.height)}`);
+        }
         
         // Check if desktop app already created instances
         if (window.floorPlanApp) {
@@ -51,9 +65,17 @@ class MobileFloorPlanApp {
             this.floorPlanEditor = new FloorPlanEditor('mobile-canvas-2d');
             console.log('✅ 2D editor initialized');
             
-            // Initialize 3D generator with separate canvas
+            // Initialize 3D generator with properly sized canvas
             this.threejsGenerator = new ThreeJSGenerator('mobile-canvas-3d');
             console.log('✅ 3D generator initialized');
+            
+            // Verify 3D canvas size
+            console.log('3D Canvas size after init:', {
+                width: this.canvas3D.width,
+                height: this.canvas3D.height,
+                styleWidth: this.canvas3D.style.width,
+                styleHeight: this.canvas3D.style.height
+            });
         }
         
         // Generate initial 3D model (even if empty)
@@ -379,6 +401,7 @@ class MobileFloorPlanApp {
     }
 
     switchView(view) {
+        console.log(`🔄 Switching to ${view} view`);
         this.currentView = view;
         
         // Update button states
@@ -392,28 +415,87 @@ class MobileFloorPlanApp {
             // Show 2D canvas, hide 3D
             this.canvas2D.style.display = 'block';
             this.canvas3D.style.display = 'none';
+            console.log('✅ Switched to 2D view');
             if (hint) {
                 hint.style.display = 'none';
             }
         } else {
+            console.log('📐 Switching to 3D view...');
+            
+            // CRITICAL: Ensure 3D canvas has proper size before showing
+            const container = document.querySelector('.mobile-canvas-container');
+            if (container) {
+                const rect = container.getBoundingClientRect();
+                this.canvas3D.style.width = '100%';
+                this.canvas3D.style.height = '100%';
+                this.canvas3D.width = Math.floor(rect.width);
+                this.canvas3D.height = Math.floor(rect.height);
+                
+                console.log('3D Canvas resized before display:', {
+                    width: this.canvas3D.width,
+                    height: this.canvas3D.height
+                });
+            }
+            
             // Show 3D canvas, hide 2D
             this.canvas2D.style.display = 'none';
             this.canvas3D.style.display = 'block';
             
-            // CRITICAL: Update 3D model and camera when switching to 3D view
+            console.log('Canvas visibility:', {
+                canvas2D: this.canvas2D.style.display,
+                canvas3D: this.canvas3D.style.display,
+                canvas3DWidth: this.canvas3D.width,
+                canvas3DHeight: this.canvas3D.height
+            });
+            
+            // Update Three.js renderer size
+            if (this.threejsGenerator && this.threejsGenerator.renderer) {
+                const rect = container.getBoundingClientRect();
+                this.threejsGenerator.renderer.setSize(Math.floor(rect.width), Math.floor(rect.height), false);
+                
+                if (this.threejsGenerator.camera) {
+                    this.threejsGenerator.camera.aspect = rect.width / rect.height;
+                    this.threejsGenerator.camera.updateProjectionMatrix();
+                }
+                
+                console.log('✅ Renderer and camera updated');
+            }
+            
+            // Update 3D model
+            console.log('🔄 Calling update3DModel...');
             this.update3DModel();
             
             // Give Three.js a moment to render, then reset camera
             setTimeout(() => {
+                console.log('📹 Setting up camera...');
                 if (this.threejsGenerator && this.threejsGenerator.camera) {
+                    console.log('Camera before:', this.threejsGenerator.camera.position);
+                    
                     // Reset camera to a good default position
                     this.threejsGenerator.camera.position.set(30, 30, 30);
                     this.threejsGenerator.camera.lookAt(0, 0, 0);
+                    
+                    console.log('Camera after:', this.threejsGenerator.camera.position);
+                    
                     if (this.threejsGenerator.controls) {
                         this.threejsGenerator.controls.target.set(0, 0, 0);
                         this.threejsGenerator.controls.update();
+                        console.log('✅ Controls updated');
                     }
+                    
+                    // Force a render
+                    if (this.threejsGenerator.renderer) {
+                        this.threejsGenerator.renderer.render(
+                            this.threejsGenerator.scene, 
+                            this.threejsGenerator.camera
+                        );
+                        console.log('✅ Forced render complete');
+                    }
+                } else {
+                    console.error('❌ Camera not found!');
                 }
+                
+                console.log('✅ Switched to 3D view');
             }, 100);
             
             if (hint) {
