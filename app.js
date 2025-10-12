@@ -142,7 +142,7 @@ class FloorPlanApp {
                         hasRoof,
                         roofStyle
                     );
-                } else {
+        } else {
                     // Update all patios and set as default for new ones
                     this.floorPlanEditor.updateAllPatioRoofSettings(hasRoof, roofStyle);
                 }

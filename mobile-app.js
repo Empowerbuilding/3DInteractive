@@ -70,24 +70,32 @@ class MobileFloorPlanApp {
         if (!container) return;
         
         const rect = container.getBoundingClientRect();
-        // DON'T use DPR for buffer size to avoid coordinate mismatch
         
+        // Set both canvases to match container exactly
+        // CSS size = buffer size for perfect 1:1 coordinate mapping
         [this.canvas2D, this.canvas3D].forEach(canvas => {
             if (!canvas) return;
             
-            // CSS size and buffer size should match 1:1
-            canvas.style.width = rect.width + 'px';
-            canvas.style.height = rect.height + 'px';
-            canvas.width = rect.width;
-            canvas.height = rect.height;
+            // Remove any inline styles that might interfere
+            canvas.style.width = '100%';
+            canvas.style.height = '100%';
+            
+            // Set buffer size to match actual display size
+            canvas.width = Math.floor(rect.width);
+            canvas.height = Math.floor(rect.height);
         });
         
         // Notify Three.js renderer of size change
         if (this.threejsGenerator && this.threejsGenerator.renderer) {
-            this.threejsGenerator.renderer.setSize(rect.width, rect.height);
+            this.threejsGenerator.renderer.setSize(Math.floor(rect.width), Math.floor(rect.height), false);
         }
         
-        console.log(`Canvases resized to ${rect.width}x${rect.height}`);
+        // Re-render the 2D canvas with correct dimensions
+        if (this.floorPlanEditor) {
+            this.floorPlanEditor.render();
+        }
+        
+        console.log(`✅ Mobile canvases resized to ${Math.floor(rect.width)}x${Math.floor(rect.height)}`);
     }
 
     setupEventListeners() {
