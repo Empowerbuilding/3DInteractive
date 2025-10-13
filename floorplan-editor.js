@@ -38,9 +38,20 @@ export class FloorPlanEditor {
         this.isDraggingPatio = false;
         this.draggedPatioCorner = null; // Which corner: 'nw', 'ne', 'sw', 'se', or null for whole patio
         
+        // Double-click detection
+        this.lastClickTime = 0; // Track for double-click detection
+        
         // Default patio roof settings (when no patio is selected)
         this.defaultPatioHasRoof = false;
         this.defaultPatioRoofStyle = 'flat';
+        
+        // Undo/Redo history
+        this.history = [];
+        this.historyIndex = -1;
+        this.maxHistorySize = 50;
+        
+        // Save initial state
+        this.saveState();
         
         // Dragging state
         this.isDraggingWall = false;
@@ -63,7 +74,7 @@ export class FloorPlanEditor {
         this.isDraggingDoorWindow = false;
         
         // Grid settings
-        this.gridSize = 20; // pixels per foot
+        this.gridSize = 10; // pixels per foot (each grid square = 2 feet)
         this.showGrid = true;
         this.snapToGrid = true;
         this.snapDistance = 15; // pixels - snap to endpoints within this distance
@@ -171,9 +182,11 @@ export class FloorPlanEditor {
         let y = e.clientY - rect.top;
         
         // Snap to grid if enabled
+        // Grid spacing is 20 pixels (2 feet per square)
         if (this.snapToGrid && !this.shiftKeyPressed) {
-            x = Math.round(x / this.gridSize) * this.gridSize;
-            y = Math.round(y / this.gridSize) * this.gridSize;
+            const gridSpacing = 20; // pixels per grid square
+            x = Math.round(x / gridSpacing) * gridSpacing;
+            y = Math.round(y / gridSpacing) * gridSpacing;
         }
         
         // Check for snapping to existing endpoints
@@ -242,14 +255,32 @@ export class FloorPlanEditor {
         const pos = this.getMousePos(e);
         
         if (this.mode === 'draw') {
-            // Start drawing a wall
-            this.currentWall = {
-                startX: pos.x,
-                startY: pos.y,
-                endX: pos.x,
-                endY: pos.y
-            };
-            this.isDrawing = true;
+            // Check for double-click to end wall chain
+            const now = Date.now();
+            const timeSinceLastClick = now - (this.lastClickTime || 0);
+            this.lastClickTime = now;
+            
+            if (timeSinceLastClick < 300 && this.isDrawing) {
+                // Double-click detected - end the wall chain
+                this.finishWallChain();
+                return;
+            }
+            
+            if (!this.isDrawing) {
+                // First click - start a new wall chain
+                this.currentWall = {
+                    startX: pos.x,
+                    startY: pos.y,
+                    endX: pos.x,
+                    endY: pos.y
+                };
+                this.isDrawing = true;
+                this.updateMeasurements(); // Update hints
+                console.log('🟢 Started wall chain at:', pos);
+            } else {
+                // Subsequent click - complete current segment and start next
+                this.addWallSegment(pos);
+            }
         } else if (this.mode === 'edit') {
             // Check patio corners first (if one is selected)
             if (this.selectedPatio !== null) {
@@ -384,6 +415,7 @@ export class FloorPlanEditor {
                     console.log('Window added:', item);
                 }
                 
+                this.saveState(); // Save state for undo
                 this.render();
                 this.updateMeasurements();
             }
@@ -576,39 +608,10 @@ export class FloorPlanEditor {
     handleMouseUp(e) {
         const pos = this.getMousePos(e);
         
-        // Handle finishing drawing a wall
-        if (this.isDrawing && this.mode === 'draw' && this.currentWall) {
-            let finalPos = { ...pos };
-            
-            if (this.shiftKeyPressed) {
-                const dx = Math.abs(pos.x - this.currentWall.startX);
-                const dy = Math.abs(pos.y - this.currentWall.startY);
-                
-                if (dx > dy) {
-                    finalPos.y = this.currentWall.startY;
-                } else {
-                    finalPos.x = this.currentWall.startX;
-                }
-            }
-            
-            this.currentWall.endX = finalPos.x;
-            this.currentWall.endY = finalPos.y;
-            
-            const length = this.calculateWallLength(this.currentWall);
-            if (length > 10) {
-                this.floors[this.currentFloor].walls.push({
-                    startX: this.currentWall.startX,
-                    startY: this.currentWall.startY,
-                    endX: this.currentWall.endX,
-                    endY: this.currentWall.endY
-                });
-                console.log('Wall added:', this.floors[this.currentFloor].walls[this.floors[this.currentFloor].walls.length - 1]);
-            }
-            
-            this.isDrawing = false;
-            this.currentWall = null;
-            this.render();
-            this.updateMeasurements();
+        // Don't do anything on mouse up in draw mode now
+        // (we handle everything in mousedown for continuous drawing)
+        if (this.isDrawing && this.mode === 'draw') {
+            return;
         }
         
         // Stop dragging
@@ -668,6 +671,7 @@ export class FloorPlanEditor {
                 };
                 this.floors[this.currentFloor].patios.push(patio);
                 console.log('Patio added:', this.floors[this.currentFloor].patios[this.floors[this.currentFloor].patios.length - 1]);
+                this.saveState(); // Save state for undo
             }
             
             this.isDrawingPatio = false;
@@ -697,6 +701,12 @@ export class FloorPlanEditor {
             this.shiftKeyPressed = true;
         }
         
+        // Escape or Enter key to finish wall chain
+        if ((e.key === 'Escape' || e.key === 'Enter') && this.isDrawing && this.mode === 'draw') {
+            this.finishWallChain();
+            return;
+        }
+        
         // F key to flip door swing direction (only for swing and pocket doors)
         if ((e.key === 'f' || e.key === 'F') && this.selectedDoor !== null) {
             const door = this.floors[this.currentFloor].doors[this.selectedDoor];
@@ -710,24 +720,29 @@ export class FloorPlanEditor {
         }
         
         if (e.key === 'Delete') {
+            let itemDeleted = false;
+            
             if (this.selectedWallIndex !== null) {
                 this.floors[this.currentFloor].walls.splice(this.selectedWallIndex, 1);
                 this.selectedWallIndex = null;
                 this.render();
                 this.updateMeasurements();
                 console.log('Wall deleted');
+                itemDeleted = true;
             } else if (this.selectedDoor !== null) {
                 this.floors[this.currentFloor].doors.splice(this.selectedDoor, 1);
                 this.selectedDoor = null;
                 this.render();
                 this.updateMeasurements();
                 console.log('Door deleted');
+                itemDeleted = true;
             } else if (this.selectedWindow !== null) {
                 this.floors[this.currentFloor].windows.splice(this.selectedWindow, 1);
                 this.selectedWindow = null;
                 this.render();
                 this.updateMeasurements();
                 console.log('Window deleted');
+                itemDeleted = true;
             } else if (this.selectedPatio !== null) {
                 this.floors[this.currentFloor].patios.splice(this.selectedPatio, 1);
                 this.selectedPatio = null;
@@ -735,6 +750,12 @@ export class FloorPlanEditor {
                 this.render();
                 this.updateMeasurements();
                 console.log('Patio deleted');
+                itemDeleted = true;
+            }
+            
+            // Save state after any deletion for undo
+            if (itemDeleted) {
+                this.saveState();
             }
             
             // Trigger 3D update after deletion
@@ -989,7 +1010,19 @@ export class FloorPlanEditor {
             
             ctx.setLineDash([]); // Reset to solid lines
             
-            // Show length of wall being drawn
+            // Draw start point indicator (blue)
+            ctx.fillStyle = '#3498db';
+            ctx.beginPath();
+            ctx.arc(this.currentWall.startX, this.currentWall.startY, 7, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Draw end point (cursor) indicator (red)
+            ctx.fillStyle = this.colors.wallPreview;
+            ctx.beginPath();
+            ctx.arc(this.currentWall.endX, this.currentWall.endY, 7, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Show length of segment being drawn
             const midX = (this.currentWall.startX + this.currentWall.endX) / 2;
             const midY = (this.currentWall.startY + this.currentWall.endY) / 2;
             const length = this.calculateWallLength(this.currentWall) / this.gridSize;
@@ -1378,8 +1411,12 @@ export class FloorPlanEditor {
         ctx.strokeStyle = this.colors.grid;
         ctx.lineWidth = 1;
         
+        // Grid spacing: 20 pixels = 2 feet
+        // Each grid square represents 2 feet
+        const gridSpacing = 20; // visual spacing in pixels
+        
         // Vertical lines
-        for (let x = 0; x < w; x += this.gridSize) {
+        for (let x = 0; x < w; x += gridSpacing) {
             ctx.beginPath();
             ctx.moveTo(x, 0);
             ctx.lineTo(x, h);
@@ -1387,7 +1424,7 @@ export class FloorPlanEditor {
         }
         
         // Horizontal lines
-        for (let y = 0; y < h; y += this.gridSize) {
+        for (let y = 0; y < h; y += gridSpacing) {
             ctx.beginPath();
             ctx.moveTo(0, y);
             ctx.lineTo(w, y);
@@ -1460,6 +1497,64 @@ export class FloorPlanEditor {
         return Math.sqrt(dx * dx + dy * dy);
     }
     
+    addWallSegment(pos) {
+        // Complete the current wall segment
+        let finalPos = { ...pos };
+        
+        if (this.shiftKeyPressed) {
+            const dx = Math.abs(pos.x - this.currentWall.startX);
+            const dy = Math.abs(pos.y - this.currentWall.startY);
+            
+            if (dx > dy) {
+                finalPos.y = this.currentWall.startY;
+            } else {
+                finalPos.x = this.currentWall.startX;
+            }
+        }
+        
+        this.currentWall.endX = finalPos.x;
+        this.currentWall.endY = finalPos.y;
+        
+        const length = this.calculateWallLength(this.currentWall);
+        if (length > 10) {
+            // Add this segment to walls
+            this.floors[this.currentFloor].walls.push({
+                startX: this.currentWall.startX,
+                startY: this.currentWall.startY,
+                endX: this.currentWall.endX,
+                endY: this.currentWall.endY
+            });
+            console.log('✅ Wall segment added:', length.toFixed(1), 'pixels');
+            this.saveState(); // Save state for undo
+            
+            // Start next segment from this end point
+            this.currentWall = {
+                startX: finalPos.x,
+                startY: finalPos.y,
+                endX: finalPos.x,
+                endY: finalPos.y
+            };
+            
+            this.render();
+            this.updateMeasurements();
+        } else {
+            console.log('⚠️ Segment too short, ignoring');
+        }
+    }
+    
+    finishWallChain() {
+        console.log('🔴 Finishing wall chain');
+        this.isDrawing = false;
+        this.currentWall = null;
+        this.render();
+        this.updateMeasurements();
+        
+        // Trigger 3D update
+        if (window.floorPlanApp) {
+            window.floorPlanApp.update3DModel();
+        }
+    }
+    
     updateMeasurements() {
         const floor = this.floors[this.currentFloor];
         
@@ -1475,8 +1570,18 @@ export class FloorPlanEditor {
                 return sum + this.calculateWallLength(wall);
             }, 0);
             const totalLengthFeet = totalLength / this.gridSize;
-            totalLengthDisplay.textContent = 
-                `${totalLengthFeet.toFixed(1)} | Doors: ${floor.doors.length} | Windows: ${floor.windows.length}`;
+            
+            // Show drawing hint when in draw mode and actively drawing
+            if (this.mode === 'draw' && this.isDrawing) {
+                totalLengthDisplay.textContent = 
+                    `Click for corners • Double-click or press Enter/Esc to finish`;
+            } else if (this.mode === 'draw') {
+                totalLengthDisplay.textContent = 
+                    `Click to start drawing • Shift = straight lines`;
+            } else {
+                totalLengthDisplay.textContent = 
+                    `${totalLengthFeet.toFixed(1)} | Doors: ${floor.doors.length} | Windows: ${floor.windows.length}`;
+            }
         }
     }
     
@@ -1485,22 +1590,82 @@ export class FloorPlanEditor {
             this.floors[this.currentFloor].walls = [];
             this.floors[this.currentFloor].doors = [];
             this.floors[this.currentFloor].windows = [];
+            this.floors[this.currentFloor].patios = []; // Clear patios too
             this.currentWall = null;
             this.isDrawing = false;
             this.selectedWallIndex = null;
+            this.selectedPatio = null;
             this.render();
             this.updateMeasurements();
+            this.saveState(); // Save state for undo
+            console.log('Floor cleared (including patios)');
+        }
+    }
+    
+    saveState() {
+        // Save current state for undo (includes walls, doors, windows, patios)
+        const currentState = JSON.parse(JSON.stringify({
+            floors: this.floors,
+            currentFloor: this.currentFloor
+        }));
+        
+        // Remove any states after current position (for redo)
+        this.history = this.history.slice(0, this.historyIndex + 1);
+        
+        // Add new state
+        this.history.push(currentState);
+        this.historyIndex++;
+        
+        // Limit history size
+        if (this.history.length > this.maxHistorySize) {
+            this.history.shift();
+            this.historyIndex--;
+        }
+        
+        const floor = this.floors[this.currentFloor];
+        console.log('State saved. History:', this.historyIndex + 1, '/', this.history.length);
+        console.log('Patios in state:', floor.patios?.length || 0);
+    }
+    
+    restoreState(state) {
+        // Restore floors and current floor from saved state
+        this.floors = JSON.parse(JSON.stringify(state.floors));
+        this.currentFloor = state.currentFloor;
+        
+        // Clear selections
+        this.selectedWallIndex = null;
+        this.selectedDoor = null;
+        this.selectedWindow = null;
+        this.selectedPatio = null;
+        this.isDrawing = false;
+        this.currentWall = null;
+        
+        this.render();
+        this.updateMeasurements();
+        
+        // Trigger 3D update
+        if (window.floorPlanApp) {
+            window.floorPlanApp.update3DModel();
         }
     }
     
     undo() {
-        const floor = this.floors[this.currentFloor];
-        if (floor.walls.length > 0) {
-            floor.walls.pop();
-            this.selectedWallIndex = null;
-            this.render();
-            this.updateMeasurements();
-            console.log('Undo - removed last wall. Total walls:', floor.walls.length);
+        if (this.historyIndex > 0) {
+            this.historyIndex--;
+            this.restoreState(this.history[this.historyIndex]);
+            console.log('Undo - restored state', this.historyIndex + 1, '/', this.history.length);
+        } else {
+            console.log('Nothing to undo');
+        }
+    }
+    
+    redo() {
+        if (this.historyIndex < this.history.length - 1) {
+            this.historyIndex++;
+            this.restoreState(this.history[this.historyIndex]);
+            console.log('Redo - restored state', this.historyIndex + 1, '/', this.history.length);
+        } else {
+            console.log('Nothing to redo');
         }
     }
     
@@ -1511,6 +1676,11 @@ export class FloorPlanEditor {
         if (!validModes.includes(mode)) {
             console.warn('Invalid mode:', mode);
             return;
+        }
+        
+        // Finish any active wall chain before switching modes
+        if (this.isDrawing && this.mode === 'draw') {
+            this.finishWallChain();
         }
         
         this.mode = mode;
@@ -1538,6 +1708,7 @@ export class FloorPlanEditor {
         }
         
         this.render();
+        this.updateMeasurements(); // Update hints when switching modes
     }
     
     addFloor() {

@@ -954,8 +954,14 @@ export class ThreeJSGenerator {
         });
         
         const overhangMeters = this.roofOverhang * feetToMeters;
-        const roofWidth = (maxX - minX) + (2 * overhangMeters);
-        const roofDepth = (maxZ - minZ) + (2 * overhangMeters);
+        
+        // Building dimensions WITHOUT overhang
+        const buildingWidth = maxX - minX;
+        const buildingDepth = maxZ - minZ;
+        
+        // Roof dimensions WITH overhang
+        const roofWidth = buildingWidth + (2 * overhangMeters);
+        const roofDepth = buildingDepth + (2 * overhangMeters);
         const roofHeight = (Math.max(roofWidth, roofDepth) / 2) * (this.roofPitch / 12);
         
         // Determine ridge orientation
@@ -986,23 +992,27 @@ export class ThreeJSGenerator {
             const centerX = (startX + endX) / 2;
             const centerZ = (startZ + endZ) / 2;
             
-            // Determine distance from center for height calculation
-            const distanceFromCenter = ridgeAlongX ? 
-                Math.abs(centerZ - (minZ + maxZ) / 2) : 
-                Math.abs(centerX - (minX + maxX) / 2);
+            // KEY FIX: Calculate distance from ROOF center (same as building center)
+            const roofCenterX = (minX + maxX) / 2;
+            const roofCenterZ = (minZ + maxZ) / 2;
             
-            const buildingHalfSpan = ridgeAlongX ? 
-                (maxZ - minZ) / 2 : 
-                (maxX - minX) / 2;
+            // Distance from gable wall to roof center
+            const distanceFromRoofCenter = ridgeAlongX ? 
+                Math.abs(centerZ - roofCenterZ) : 
+                Math.abs(centerX - roofCenterX);
             
-            // Calculate triangle height at this wall position
-            const triangleHeight = roofHeight * (1 - (distanceFromCenter / buildingHalfSpan));
+            // Use ROOF half-span for calculating triangle height
+            const roofHalfSpan = ridgeAlongX ? roofDepth / 2 : roofWidth / 2;
             
-            if (triangleHeight <= 0) return;
+            // Calculate triangle height - inversely proportional to distance from center
+            // Formula creates linear slope: height = peak - (peak * distance/span)
+            const triangleHeight = roofHeight - (roofHeight * (distanceFromRoofCenter / roofHalfSpan));
             
-            // Create triangular gable wall geometry
+            if (triangleHeight <= 0.01) return;  // Small tolerance for floating point
+            
+            // Create triangular gable wall geometry - keep at original wall width
             const geometry = new THREE.BufferGeometry();
-            const halfLength = length / 2;
+            const halfLength = length / 2;  // Original width, not extended
             
             // Triangle vertices: bottom-left, bottom-right, top-center
             const vertices = new Float32Array([
@@ -1187,8 +1197,16 @@ export class ThreeJSGenerator {
         });
         
         const overhangMeters = roofOverhang * feetToMeters;
-        const roofWidth = (maxX - minX) + (2 * overhangMeters);
-        const roofDepth = (maxZ - minZ) + (2 * overhangMeters);
+        
+        // Building dimensions WITHOUT overhang
+        const buildingWidth = maxX - minX;
+        const buildingDepth = maxZ - minZ;
+        
+        // Roof dimensions WITH overhang
+        const roofWidth = buildingWidth + (2 * overhangMeters);
+        const roofDepth = buildingDepth + (2 * overhangMeters);
+        
+        // Calculate roof height based on the FULL roof span (including overhang)
         const roofHeight = (Math.max(roofWidth, roofDepth) / 2) * (roofPitch / 12);
         
         const ridgeAlongX = roofWidth > roofDepth;
@@ -1214,23 +1232,32 @@ export class ThreeJSGenerator {
             const centerX = (startX + endX) / 2;
             const centerZ = (startZ + endZ) / 2;
             
-            const distanceFromCenter = ridgeAlongX ? 
-                Math.abs(centerZ - (minZ + maxZ) / 2) : 
-                Math.abs(centerX - (minX + maxX) / 2);
+            // KEY FIX: Calculate distance from ROOF center (same as building center)
+            const roofCenterX = (minX + maxX) / 2;
+            const roofCenterZ = (minZ + maxZ) / 2;
             
-            const buildingHalfSpan = ridgeAlongX ? 
-                (maxZ - minZ) / 2 : 
-                (maxX - minX) / 2;
+            // Distance from the gable wall to the roof center
+            const distanceFromRoofCenter = ridgeAlongX ? 
+                Math.abs(centerZ - roofCenterZ) : 
+                Math.abs(centerX - roofCenterX);
             
-            const triangleHeight = roofHeight * (1 - (distanceFromCenter / buildingHalfSpan));
+            // Use ROOF half-span for calculation
+            const roofHalfSpan = ridgeAlongX ? roofDepth / 2 : roofWidth / 2;
             
-            if (triangleHeight <= 0) return;
+            // Calculate triangle height from roof center
+            // At the building edge, we're (buildingHalfSpan) away from roof center
+            // Roof extends (roofHalfSpan) from roof center
+            // Formula: height = roofHeight - (roofHeight * distance/span)
+            // This creates a linear slope from peak (roofHeight at center) to edge (0 at roofHalfSpan)
+            const triangleHeight = roofHeight - (roofHeight * (distanceFromRoofCenter / roofHalfSpan));
+            
+            if (triangleHeight <= 0.01) return;  // Small tolerance for floating point
             
             const geometry = new THREE.BufferGeometry();
-            const halfLength = length / 2;
+            const halfLength = length / 2;  // Keep wall at ORIGINAL width
             
             const vertices = new Float32Array([
-                // Front face
+                // Front face - keep wall at original width (aligned with building)
                 -halfLength, 0, 0,
                 halfLength, 0, 0,
                 0, triangleHeight, 0,
