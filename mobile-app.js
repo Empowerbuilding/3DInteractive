@@ -259,25 +259,53 @@ class MobileFloorPlanApp {
         });
 
         // ==================== MOBILE 3D MODEL UPSCALE BUTTON ====================
-        // Mobile upscale button - open lead generation modal
-        const mobileUpscaleBtn = document.getElementById('mobile-upscale-3d');
-        console.log('🔍 Mobile upscale button found:', mobileUpscaleBtn);
-        console.log('🔍 window.openLeadModal available:', typeof window.openLeadModal);
-        
-        if (mobileUpscaleBtn) {
-            mobileUpscaleBtn.addEventListener('click', () => {
+        // Setup mobile upscale button with retry logic to handle script loading order
+        const setupUpscaleButton = () => {
+            const mobileUpscaleBtn = document.getElementById('mobile-upscale-3d');
+            
+            if (!mobileUpscaleBtn) {
+                console.error('❌ Mobile upscale button #mobile-upscale-3d not found!');
+                return;
+            }
+            
+            // Remove any existing listeners by cloning the node
+            const newBtn = mobileUpscaleBtn.cloneNode(true);
+            mobileUpscaleBtn.parentNode.replaceChild(newBtn, mobileUpscaleBtn);
+            
+            // Add fresh event listener
+            newBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
                 console.log('🎯 Mobile upscale button clicked!');
+                
                 if (typeof window.openLeadModal === 'function') {
-                    console.log('✅ Opening lead modal...');
+                    console.log('✅ Opening lead modal via window.openLeadModal');
                     window.openLeadModal();
                 } else {
-                    console.error('❌ window.openLeadModal is not a function!');
+                    console.warn('⚠️ window.openLeadModal not available, using fallback');
+                    
+                    // Direct DOM manipulation fallback
+                    const modal = document.getElementById('leadModal');
+                    if (modal) {
+                        modal.classList.add('active');
+                        document.body.style.overflow = 'hidden';
+                        console.log('✅ Opened modal via DOM manipulation');
+                    } else {
+                        console.error('❌ Lead modal element not found!');
+                        alert('Modal not ready. Please try again.');
+                    }
                 }
             });
-            console.log('✅ Event listener attached to mobile upscale button');
-        } else {
-            console.error('❌ Mobile upscale button not found!');
-        }
+            
+            console.log('✅ Mobile upscale button event listener attached');
+        };
+
+        // Try immediately
+        setupUpscaleButton();
+
+        // Retry after delay to ensure lead-generation.js is loaded
+        setTimeout(setupUpscaleButton, 300);
+        setTimeout(setupUpscaleButton, 1000);
 
         // Hamburger Menu
         document.getElementById('mobile-menu-btn')?.addEventListener('click', () => {
