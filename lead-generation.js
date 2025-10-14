@@ -263,12 +263,85 @@ async function triggerUpscaleWithLead(leadData, statusText) {
         throw new Error('Unable to find 3D canvas');
     }
 
-    console.log('📸 Capturing canvas:', {
-        width: canvas.width,
-        height: canvas.height,
-        displayWidth: canvas.clientWidth,
-        displayHeight: canvas.clientHeight
-    });
+    // Set ideal camera position BEFORE capturing screenshot
+    const threejsGenerator = window.floorPlanApp?.threejsGenerator || window.mobileApp?.threejsGenerator;
+
+    if (threejsGenerator && threejsGenerator.camera && threejsGenerator.controls) {
+        console.log('📸 Setting optimal camera angle for screenshot...');
+        
+        // Calculate building center and dimensions from the scene
+        let minX = Infinity, maxX = -Infinity;
+        let minZ = Infinity, maxZ = -Infinity;
+        let maxY = -Infinity;
+        
+        threejsGenerator.scene.children.forEach(child => {
+            if (child.userData.isBuilding && child.geometry) {
+                // Calculate bounds from geometry and position
+                const pos = child.position;
+                const geometry = child.geometry;
+                
+                // If geometry has boundingBox, use it
+                if (!geometry.boundingBox) {
+                    geometry.computeBoundingBox();
+                }
+                
+                if (geometry.boundingBox) {
+                    const bbox = geometry.boundingBox;
+                    minX = Math.min(minX, pos.x + bbox.min.x);
+                    maxX = Math.max(maxX, pos.x + bbox.max.x);
+                    minZ = Math.min(minZ, pos.z + bbox.min.z);
+                    maxZ = Math.max(maxZ, pos.z + bbox.max.z);
+                    maxY = Math.max(maxY, pos.y + bbox.max.y);
+                }
+            }
+        });
+        
+        // Calculate building center
+        const buildingCenterX = (minX + maxX) / 2;
+        const buildingCenterZ = (minZ + maxZ) / 2;
+        const buildingWidth = maxX - minX;
+        const buildingDepth = maxZ - minZ;
+        const buildingSize = Math.max(buildingWidth, buildingDepth);
+        const buildingHeight = maxY;
+        
+        // Human eye level height (6 feet = ~1.8 meters)
+        const eyeLevel = 1.8;
+        
+        // Calculate optimal distance - far enough to see whole building but close enough to fill frame
+        // Distance formula: size / (2 * tan(fov/2)) with some padding
+        const fovRadians = (threejsGenerator.camera.fov * Math.PI) / 180;
+        const optimalDistance = (buildingSize * 1.2) / (2 * Math.tan(fovRadians / 2));
+        
+        // Position camera in front of building at eye level, looking UP at it
+        // Place camera to the front-right for a nice 3/4 view angle
+        const cameraX = buildingCenterX + buildingSize * 0.6;  // Offset to the side
+        const cameraY = eyeLevel;  // 6 feet off ground
+        const cameraZ = buildingCenterZ + optimalDistance;  // In front of building
+        
+        // Calculate the point to look at (slightly above center to avoid seeing roof)
+        const lookAtY = buildingHeight * 0.4;  // Look at middle-upper part of building
+        
+        threejsGenerator.camera.position.set(cameraX, cameraY, cameraZ);
+        threejsGenerator.camera.lookAt(buildingCenterX, lookAtY, buildingCenterZ);
+        
+        // Update controls to match
+        threejsGenerator.controls.target.set(buildingCenterX, lookAtY, buildingCenterZ);
+        threejsGenerator.controls.update();
+        
+        // Force a render with new camera position
+        threejsGenerator.renderer.render(threejsGenerator.scene, threejsGenerator.camera);
+        
+        console.log('✅ Camera positioned at eye level:', {
+            position: { x: cameraX, y: cameraY, z: cameraZ },
+            lookingAt: { x: buildingCenterX, y: lookAtY, z: buildingCenterZ },
+            buildingSize: { width: buildingWidth, depth: buildingDepth, height: buildingHeight }
+        });
+        
+        // Small delay to ensure render completes
+        await new Promise(resolve => setTimeout(resolve, 200));
+    }
+
+    console.log('📸 Capturing optimized view...');
 
     // Convert canvas to blob
     const blob = await new Promise((resolve, reject) => {
