@@ -460,10 +460,10 @@
     }, 500);
   </script>
 
-  <!-- Lead Generation Modal -->
+  <!-- Lead Generation Modal - MUST BE OUTSIDE .mobile-layout -->
   <div class="lead-modal-overlay" id="leadModal">
     <div class="lead-modal-content">
-      <button class="lead-close-btn" onclick="closeLeadModal()">&times;</button>
+      <button class="lead-close-btn" onclick="window.closeLeadModal()">&times;</button>
 
       <div class="lead-modal-header">
         <div class="lead-modal-icon">🏠✨</div>
@@ -506,7 +506,7 @@
         <p class="lead-error-message" id="leadPhoneError">Please enter a valid phone number</p>
       </div>
 
-      <button class="lead-submit-btn" id="leadSubmitBtn" onclick="handleLeadSubmit()">
+      <button class="lead-submit-btn" id="leadSubmitBtn" onclick="window.handleLeadSubmit()">
         ✨ Generate My Design
       </button>
 

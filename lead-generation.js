@@ -41,30 +41,83 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // Expose functions to window object for ES6 module access
 window.openLeadModal = function openLeadModal() {
+    console.log('🎯 openLeadModal called');
     const modal = document.getElementById('leadModal');
-    if (modal) {
-        modal.classList.add('active');
-        document.body.style.overflow = 'hidden';
+    
+    if (!modal) {
+        console.error('❌ Modal element #leadModal not found');
+        alert('Error: Modal not found. Please refresh the page.');
+        return;
     }
+    
+    console.log('📋 Modal found, opening...');
+    
+    // CRITICAL: Force visibility with inline styles
+    modal.style.display = 'flex';
+    modal.style.position = 'fixed';
+    modal.style.top = '0';
+    modal.style.left = '0';
+    modal.style.right = '0';
+    modal.style.bottom = '0';
+    modal.style.zIndex = '999999';
+    modal.style.width = '100vw';
+    modal.style.height = '100vh';
+    
+    // Add active class for animation
+    requestAnimationFrame(() => {
+        modal.classList.add('active');
+    });
+    
+    // Prevent body scroll
+    document.body.style.overflow = 'hidden';
+    document.body.style.position = 'fixed';
+    document.body.style.width = '100%';
+    
+    console.log('✅ Modal opened successfully');
+    console.log('Modal computed display:', window.getComputedStyle(modal).display);
+    console.log('Modal computed z-index:', window.getComputedStyle(modal).zIndex);
 };
 
 window.closeLeadModal = function closeLeadModal() {
+    console.log('🔴 closeLeadModal called');
     const modal = document.getElementById('leadModal');
-    if (modal) {
-        modal.classList.remove('active');
-        document.body.style.overflow = 'auto';
-        // Clear form
-        document.getElementById('leadNameInput').value = '';
-        document.getElementById('leadEmailInput').value = '';
-        document.getElementById('leadPhoneInput').value = '';
-        // Clear errors
-        document.querySelectorAll('.lead-form-input').forEach(input => {
-            input.classList.remove('error');
-        });
-        document.querySelectorAll('.lead-error-message').forEach(msg => {
-            msg.classList.remove('visible');
-        });
+    
+    if (!modal) {
+        console.error('❌ Modal element not found');
+        return;
     }
+    
+    // Remove active class for animation
+    modal.classList.remove('active');
+    
+    // Wait for animation, then hide
+    setTimeout(() => {
+        modal.style.display = 'none';
+    }, 300);
+    
+    // Restore body scroll
+    document.body.style.overflow = '';
+    document.body.style.position = '';
+    document.body.style.width = '';
+    
+    // Clear form
+    const nameInput = document.getElementById('leadNameInput');
+    const emailInput = document.getElementById('leadEmailInput');
+    const phoneInput = document.getElementById('leadPhoneInput');
+    
+    if (nameInput) nameInput.value = '';
+    if (emailInput) emailInput.value = '';
+    if (phoneInput) phoneInput.value = '';
+    
+    // Clear errors
+    document.querySelectorAll('.lead-form-input').forEach(input => {
+        input.classList.remove('error');
+    });
+    document.querySelectorAll('.lead-error-message').forEach(msg => {
+        msg.classList.remove('visible');
+    });
+    
+    console.log('✅ Modal closed successfully');
 };
 
 function validateLeadForm() {

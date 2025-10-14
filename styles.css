@@ -1326,16 +1326,20 @@ button {
     left: 0;
     right: 0;
     bottom: 0;
-    background: rgba(0, 0, 0, 0.7);
-    z-index: 10000;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.8);
+    z-index: 999999; /* CRITICAL: Must be higher than mobile-layout (99999) */
     padding: 20px;
     animation: fadeIn 0.3s ease;
     align-items: center;
     justify-content: center;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
 }
 
 .lead-modal-overlay.active {
-    display: flex;
+    display: flex !important;
 }
 
 .lead-modal-content {
@@ -1349,6 +1353,7 @@ button {
     position: relative;
     max-height: 90vh;
     overflow-y: auto;
+    z-index: 1000000; /* Even higher */
 }
 
 .lead-close-btn {
@@ -1363,6 +1368,7 @@ button {
     line-height: 1;
     padding: 4px 12px;
     transition: color 0.2s;
+    z-index: 1000001;
 }
 
 .lead-close-btn:hover {
@@ -1414,6 +1420,7 @@ button {
     border-radius: 10px;
     outline: none;
     transition: border-color 0.2s;
+    box-sizing: border-box;
 }
 
 .lead-form-input:focus {
@@ -1455,9 +1462,14 @@ button {
     box-shadow: 0 6px 16px rgba(102, 126, 234, 0.4);
 }
 
+.lead-submit-btn:active {
+    transform: translateY(0);
+}
+
 .lead-submit-btn:disabled {
     background: #9ca3af;
     cursor: not-allowed;
+    opacity: 0.6;
 }
 
 .lead-privacy-note {
@@ -1479,17 +1491,68 @@ button {
     }
 }
 
-/* Mobile optimizations */
-@media (max-width: 640px) {
+/* CRITICAL: Mobile-specific overrides */
+@media (max-width: 1024px) {
+    .lead-modal-overlay {
+        padding: 15px;
+        z-index: 999999 !important;
+    }
+    
     .lead-modal-content {
         padding: 30px 24px;
+        max-height: 85vh;
+        width: 95%;
+        max-width: 95%;
     }
-
+    
+    .lead-modal-header {
+        text-align: center;
+        margin-bottom: 28px;
+    }
+    
+    .lead-modal-icon {
+        font-size: 42px;
+        margin-bottom: 12px;
+    }
+    
     .lead-modal-title {
-        font-size: 24px;
+        font-size: 22px !important;
     }
-
+    
     .lead-modal-subtitle {
-        font-size: 14px;
+        font-size: 14px !important;
+    }
+    
+    .lead-form-input {
+        font-size: 16px !important; /* Prevent iOS zoom */
+        padding: 14px 16px;
+    }
+    
+    .lead-submit-btn {
+        padding: 16px;
+        font-size: 16px;
+        min-height: 52px; /* Better touch target */
+    }
+    
+    .lead-close-btn {
+        font-size: 28px;
+        padding: 8px 16px;
+        top: 12px;
+        right: 12px;
+    }
+}
+
+@media (max-width: 480px) {
+    .lead-modal-overlay {
+        padding: 10px;
+    }
+    
+    .lead-modal-content {
+        padding: 24px 20px;
+        border-radius: 16px;
+    }
+    
+    .lead-modal-title {
+        font-size: 20px !important;
     }
 }
