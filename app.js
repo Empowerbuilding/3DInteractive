@@ -34,13 +34,35 @@ class FloorPlanApp {
             }
         });
         
-        // Undo button
+        // Undo button (sidebar)
         document.getElementById('undo')?.addEventListener('click', () => {
             if (this.floorPlanEditor) {
                 this.floorPlanEditor.undo();
                 this.update3DModel();
             }
         });
+        
+        // Quick Undo button (floating)
+        document.getElementById('quick-undo')?.addEventListener('click', () => {
+            if (this.floorPlanEditor) {
+                this.floorPlanEditor.undo();
+                this.update3DModel();
+            }
+        });
+        
+        // Show/hide quick undo button based on mode and history
+        if (this.floorPlanEditor) {
+            // Check every 500ms if button should be visible
+            setInterval(() => {
+                const quickUndoBtn = document.getElementById('quick-undo');
+                if (quickUndoBtn && this.floorPlanEditor) {
+                    const shouldShow = (this.floorPlanEditor.mode === 'draw' || 
+                                      this.floorPlanEditor.mode === 'edit') && 
+                                      this.floorPlanEditor.historyIndex > 0;
+                    quickUndoBtn.style.display = shouldShow ? 'flex' : 'none';
+                }
+            }, 500);
+        }
         
         // Set up mode buttons with exclusive selection
         this.setupModeButtons();

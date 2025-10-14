@@ -199,22 +199,25 @@ export class FloorPlanEditor {
     }
     
     findSnapPoint(x, y) {
+        // Increased snap distance for easier snapping (mobile & desktop)
+        const snapDistance = window.innerWidth < 1025 ? 35 : 25; // Larger on mobile
+        
         // Find nearby wall endpoints to snap to
         for (const wall of this.floors[this.currentFloor].walls) {
             // Check start point
             const distStart = Math.sqrt(
                 Math.pow(wall.startX - x, 2) + Math.pow(wall.startY - y, 2)
             );
-            if (distStart < this.snapDistance) {
-                return { x: wall.startX, y: wall.startY };
+            if (distStart < snapDistance) {
+                return { x: wall.startX, y: wall.startY, snapped: true };
             }
             
             // Check end point
             const distEnd = Math.sqrt(
                 Math.pow(wall.endX - x, 2) + Math.pow(wall.endY - y, 2)
             );
-            if (distEnd < this.snapDistance) {
-                return { x: wall.endX, y: wall.endY };
+            if (distEnd < snapDistance) {
+                return { x: wall.endX, y: wall.endY, snapped: true };
             }
         }
         return null;
@@ -699,6 +702,36 @@ export class FloorPlanEditor {
     handleKeyDown(e) {
         if (e.key === 'Shift') {
             this.shiftKeyPressed = true;
+        }
+        
+        // Ctrl+Z or Cmd+Z for undo (cross-platform)
+        if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) {
+            e.preventDefault();
+            this.undo();
+            return;
+        }
+        
+        // Ctrl+Shift+Z or Cmd+Shift+Z for redo
+        if ((e.ctrlKey || e.metaKey) && e.key === 'z' && e.shiftKey) {
+            e.preventDefault();
+            this.redo();
+            return;
+        }
+        
+        // Backspace to undo last wall segment while drawing
+        if (e.key === 'Backspace' && this.isDrawing && this.floors[this.currentFloor].walls.length > 0) {
+            e.preventDefault();
+            // Remove last wall segment
+            this.floors[this.currentFloor].walls.pop();
+            console.log('⬅️ Removed last wall segment with Backspace');
+            this.render();
+            this.updateMeasurements();
+            
+            // Trigger 3D update
+            if (window.floorPlanApp) {
+                window.floorPlanApp.update3DModel();
+            }
+            return;
         }
         
         // Escape or Enter key to finish wall chain
@@ -1516,7 +1549,10 @@ export class FloorPlanEditor {
         this.currentWall.endY = finalPos.y;
         
         const length = this.calculateWallLength(this.currentWall);
-        if (length > 10) {
+        const lengthFeet = length / this.gridSize;
+        
+        // Minimum 1 foot wall length (more reasonable)
+        if (lengthFeet >= 1) {
             // Add this segment to walls
             this.floors[this.currentFloor].walls.push({
                 startX: this.currentWall.startX,
@@ -1524,7 +1560,7 @@ export class FloorPlanEditor {
                 endX: this.currentWall.endX,
                 endY: this.currentWall.endY
             });
-            console.log('✅ Wall segment added:', length.toFixed(1), 'pixels');
+            console.log('✅ Wall segment added:', lengthFeet.toFixed(1), 'feet');
             this.saveState(); // Save state for undo
             
             // Start next segment from this end point
@@ -1538,7 +1574,8 @@ export class FloorPlanEditor {
             this.render();
             this.updateMeasurements();
         } else {
-            console.log('⚠️ Segment too short, ignoring');
+            console.log('⚠️ Wall too short (minimum 1 foot), click further away');
+            this.showToast(`Wall too short (${lengthFeet.toFixed(1)} ft) - minimum 1 foot`, 'warning');
         }
     }
     
@@ -1654,8 +1691,12 @@ export class FloorPlanEditor {
             this.historyIndex--;
             this.restoreState(this.history[this.historyIndex]);
             console.log('Undo - restored state', this.historyIndex + 1, '/', this.history.length);
+            
+            // Show toast notification
+            this.showToast('↩️ Undo successful', 'success');
         } else {
             console.log('Nothing to undo');
+            this.showToast('Nothing to undo', 'info');
         }
     }
     
@@ -1664,8 +1705,40 @@ export class FloorPlanEditor {
             this.historyIndex++;
             this.restoreState(this.history[this.historyIndex]);
             console.log('Redo - restored state', this.historyIndex + 1, '/', this.history.length);
+            
+            // Show toast notification
+            this.showToast('↪️ Redo successful', 'success');
         } else {
             console.log('Nothing to redo');
+            this.showToast('Nothing to redo', 'info');
+        }
+    }
+    
+    showToast(message, type = 'info') {
+        // Remove existing toast if any
+        const existingToast = document.querySelector('.editor-toast');
+        if (existingToast) {
+            existingToast.remove();
+        }
+        
+        // Create toast element
+        const toast = document.createElement('div');
+        toast.className = `editor-toast editor-toast-${type}`;
+        toast.textContent = message;
+        
+        // Add to canvas container
+        const container = this.canvas.parentElement;
+        if (container) {
+            container.appendChild(toast);
+            
+            // Trigger animation
+            setTimeout(() => toast.classList.add('show'), 10);
+            
+            // Remove after 2 seconds
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => toast.remove(), 300);
+            }, 2000);
         }
     }
     

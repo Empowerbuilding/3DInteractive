@@ -693,6 +693,112 @@ button {
     transform: translateX(2px) scale(0.95);
 }
 
+/* ==================== QUICK UNDO BUTTON ==================== */
+.quick-undo-btn {
+    position: absolute;
+    bottom: 80px;
+    right: 20px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 20px;
+    background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%);
+    color: white;
+    border: none;
+    border-radius: 50px;
+    box-shadow: 0 4px 12px rgba(243, 156, 18, 0.4);
+    cursor: pointer;
+    font-size: 15px;
+    font-weight: 700;
+    transition: all 0.2s;
+    z-index: 100;
+    animation: slideInFromRight 0.3s ease;
+}
+
+.quick-undo-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(243, 156, 18, 0.5);
+}
+
+.quick-undo-btn:active {
+    transform: translateY(0);
+}
+
+.quick-undo-btn .undo-icon {
+    font-size: 20px;
+}
+
+.quick-undo-btn .undo-text {
+    font-size: 14px;
+}
+
+/* ==================== TOAST NOTIFICATIONS ==================== */
+.editor-toast {
+    position: absolute;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%) translateY(-100px);
+    background: rgba(0, 0, 0, 0.9);
+    color: white;
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    z-index: 1000;
+    opacity: 0;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    pointer-events: none;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.editor-toast.show {
+    transform: translateX(-50%) translateY(0);
+    opacity: 1;
+}
+
+.editor-toast-success {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+}
+
+.editor-toast-info {
+    background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+}
+
+.editor-toast-warning {
+    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+}
+
+@keyframes slideInFromRight {
+    from {
+        transform: translateX(100px);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+/* Mobile-specific adjustments for undo button and toasts */
+@media (max-width: 1024px) {
+    .quick-undo-btn {
+        bottom: 100px; /* Avoid bottom sheet */
+        right: 16px;
+        padding: 14px 22px;
+        font-size: 16px;
+    }
+    
+    .quick-undo-btn .undo-icon {
+        font-size: 22px;
+    }
+    
+    .editor-toast {
+        max-width: 90%;
+        font-size: 15px;
+        padding: 14px 20px;
+    }
+}
+
 /* ==================== ADDITIONAL RESPONSIVE ==================== */
 @media (max-width: 1440px) {
     .toolbar-center {
