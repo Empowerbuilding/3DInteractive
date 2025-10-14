@@ -152,6 +152,58 @@ function validateLeadForm() {
     return isValid;
 }
 
+// NEW: Separate function to show notification immediately
+function showEmailNotification() {
+    const isMobileView = window.innerWidth < 1025;
+    const notificationModal = document.createElement('div');
+    notificationModal.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0,0,0,${isMobileView ? '0.9' : '0.8'});
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 10000;
+        padding: 20px;
+        animation: fadeIn 0.3s;
+    `;
+    notificationModal.innerHTML = `
+        <div style="background: white; border-radius: ${isMobileView ? '20px' : '16px'}; padding: ${isMobileView ? '28px' : '32px'}; max-width: ${isMobileView ? '100%' : '500px'}; ${isMobileView ? 'width: 100%;' : ''} text-align: center; box-shadow: 0 10px 40px rgba(0,0,0,0.3);">
+            <div style="font-size: ${isMobileView ? '72px' : '64px'}; margin-bottom: 16px;">📧</div>
+            <h2 style="margin: 0 0 16px 0; font-size: ${isMobileView ? '22px' : '24px'}; font-weight: 700; color: #1f2937;">Check Your Email!</h2>
+            <p style="margin: 0 0 ${isMobileView ? '20px' : '24px'} 0; font-size: ${isMobileView ? '15px' : '16px'}; color: #6b7280; line-height: 1.6;">
+                Your AI-enhanced photorealistic images will appear in your email inbox within <strong style="color: #667eea;">5 minutes or less</strong>.
+            </p>
+            <div style="background: #f0f4ff; padding: 16px; border-radius: 12px; margin-bottom: ${isMobileView ? '20px' : '24px'};">
+                <p style="margin: 0; font-size: 14px; color: #667eea; font-weight: ${isMobileView ? '600' : '500'};">
+                    ⏱️ Processing your 3D model with AI...
+                </p>
+            </div>
+            <button onclick="this.closest('div').parentElement.remove()" style="width: 100%; padding: ${isMobileView ? '16px' : '14px'}; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; border-radius: 12px; cursor: pointer; font-weight: 700; font-size: 16px; ${isMobileView ? 'min-height: 48px;' : ''} transition: transform 0.2s;">
+                Got it!
+            </button>
+        </div>
+    `;
+    document.body.appendChild(notificationModal);
+
+    // Click/tap outside to close
+    notificationModal.addEventListener('click', (e) => {
+        if (e.target === notificationModal) {
+            notificationModal.remove();
+        }
+    });
+
+    // Auto-close after 10 seconds
+    setTimeout(() => {
+        if (document.body.contains(notificationModal)) {
+            notificationModal.remove();
+        }
+    }, 10000);
+}
+
 // Expose to window object for onclick handler in HTML
 window.handleLeadSubmit = async function handleLeadSubmit() {
     if (!validateLeadForm()) {
@@ -163,11 +215,6 @@ window.handleLeadSubmit = async function handleLeadSubmit() {
     
     submitBtn.disabled = true;
     submitBtn.textContent = '🔄 Processing...';
-    
-    if (statusText) {
-        statusText.textContent = 'Capturing 3D model...';
-        statusText.style.color = '#667eea';
-    }
 
     const leadData = {
         name: document.getElementById('leadNameInput').value.trim(),
@@ -182,15 +229,17 @@ window.handleLeadSubmit = async function handleLeadSubmit() {
         // Close modal first
         window.closeLeadModal();
         
-        // Trigger the actual upscale with lead data
-        await triggerUpscaleWithLead(leadData, statusText);
+        // SHOW SUCCESS NOTIFICATION IMMEDIATELY (before webhook)
+        showEmailNotification();
+        
+        // Trigger the actual upscale with lead data (async in background)
+        triggerUpscaleWithLead(leadData, statusText).catch(error => {
+            console.error('❌ Background processing error:', error);
+        });
         
     } catch (error) {
         console.error('❌ Error:', error);
         alert('❌ There was an error processing your request. Please try again.');
-    } finally {
-        submitBtn.disabled = false;
-        submitBtn.textContent = '✨ Generate My Design';
     }
 };
 
@@ -221,10 +270,6 @@ async function triggerUpscaleWithLead(leadData, statusText) {
         displayHeight: canvas.clientHeight
     });
 
-    if (statusText) {
-        statusText.textContent = 'Preparing image...';
-    }
-
     // Convert canvas to blob
     const blob = await new Promise((resolve, reject) => {
         canvas.toBlob((blob) => {
@@ -232,10 +277,6 @@ async function triggerUpscaleWithLead(leadData, statusText) {
             else reject(new Error('Failed to capture image'));
         }, 'image/png', 1.0);
     });
-
-    if (statusText) {
-        statusText.textContent = 'Sending to AI for enhancement...';
-    }
 
     // Create FormData with lead info and screenshot
     const formData = new FormData();
@@ -297,96 +338,14 @@ async function triggerUpscaleWithLead(leadData, statusText) {
         }
     }
 
-    // Send to n8n webhook
-    const response = await fetch('https://n8n.empowerbuilding.ai/webhook/4239cad4-0815-4c94-a526-f4335b175aed', {
+    // Send to n8n webhook (fire and forget - no await)
+    fetch('https://n8n.empowerbuilding.ai/webhook/4239cad4-0815-4c94-a526-f4335b175aed', {
         method: 'POST',
         body: formData
+    }).then(response => {
+        console.log('✅ Webhook request sent successfully');
+    }).catch(error => {
+        console.error('⚠️ Webhook error (not critical):', error);
     });
-
-    if (!response.ok) {
-        throw new Error(`Server responded with ${response.status}: ${response.statusText}`);
-    }
-
-    // Parse response
-    let result = null;
-    const responseText = await response.text();
-    console.log('📥 Raw response:', responseText);
-
-    if (responseText && responseText.trim()) {
-        try {
-            result = JSON.parse(responseText);
-            console.log('✅ Upload result:', result);
-        } catch (parseError) {
-            console.warn('⚠️ Response is not JSON:', responseText);
-            result = { message: 'Success', rawResponse: responseText };
-        }
-    } else {
-        console.log('✅ Webhook accepted request');
-        result = { message: 'Request submitted successfully' };
-    }
-
-    // Success state
-    if (statusText) {
-        statusText.textContent = '✨ Request submitted successfully!';
-        statusText.style.color = '#10b981';
-    }
-
-    // Show email notification popup
-    const isMobileView = window.innerWidth < 1025;
-    const notificationModal = document.createElement('div');
-    notificationModal.style.cssText = `
-        position: fixed;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background: rgba(0,0,0,${isMobileView ? '0.9' : '0.8'});
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        z-index: 10000;
-        padding: 20px;
-        animation: fadeIn 0.3s;
-    `;
-    notificationModal.innerHTML = `
-        <div style="background: white; border-radius: ${isMobileView ? '20px' : '16px'}; padding: ${isMobileView ? '28px' : '32px'}; max-width: ${isMobileView ? '100%' : '500px'}; ${isMobileView ? 'width: 100%;' : ''} text-align: center; box-shadow: 0 10px 40px rgba(0,0,0,0.3);">
-            <div style="font-size: ${isMobileView ? '72px' : '64px'}; margin-bottom: 16px;">📧</div>
-            <h2 style="margin: 0 0 16px 0; font-size: ${isMobileView ? '22px' : '24px'}; font-weight: 700; color: #1f2937;">Check Your Email!</h2>
-            <p style="margin: 0 0 ${isMobileView ? '20px' : '24px'} 0; font-size: ${isMobileView ? '15px' : '16px'}; color: #6b7280; line-height: 1.6;">
-                Your AI-enhanced photorealistic images will appear in your email inbox within <strong style="color: #667eea;">5 minutes or less</strong>.
-            </p>
-            <div style="background: #f0f4ff; padding: 16px; border-radius: 12px; margin-bottom: ${isMobileView ? '20px' : '24px'};">
-                <p style="margin: 0; font-size: 14px; color: #667eea; font-weight: ${isMobileView ? '600' : '500'};">
-                    ⏱️ Processing your 3D model with AI...
-                </p>
-            </div>
-            <button onclick="this.closest('div').parentElement.remove()" style="width: 100%; padding: ${isMobileView ? '16px' : '14px'}; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; border-radius: 12px; cursor: pointer; font-weight: 700; font-size: 16px; ${isMobileView ? 'min-height: 48px;' : ''} transition: transform 0.2s;">
-                Got it!
-            </button>
-        </div>
-    `;
-    document.body.appendChild(notificationModal);
-
-    // Click/tap outside to close
-    notificationModal.addEventListener('click', (e) => {
-        if (e.target === notificationModal) {
-            notificationModal.remove();
-        }
-    });
-
-    // Auto-close after 10 seconds
-    setTimeout(() => {
-        if (document.body.contains(notificationModal)) {
-            notificationModal.remove();
-        }
-    }, 10000);
-
-    // Reset status after delay
-    setTimeout(() => {
-        if (statusText) {
-            statusText.textContent = '';
-            statusText.style.color = '';
-        }
-    }, 5000);
 }
 
