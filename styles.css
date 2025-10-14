@@ -1312,17 +1312,26 @@ button {
     position: fixed;
     top: 0;
     left: 0;
-    width: 280px;
+    width: 75%; /* Responsive width - 75% of screen */
+    max-width: 320px; /* But never more than 320px */
     height: 100%;
     max-height: 100vh; /* Prevent overflow */
     background: white;
-    box-shadow: 4px 0 12px rgba(0,0,0,0.15);
+    box-shadow: 4px 0 20px rgba(0,0,0,0.2);
     transform: translateX(-100%);
     transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     z-index: 200; /* Above everything */
     display: flex;
     flex-direction: column;
     overflow-y: auto; /* Allow scrolling if needed */
+}
+
+/* Smaller screens get even narrower menu */
+@media (max-width: 360px) {
+    .side-menu {
+        width: 80%;
+        max-width: 280px;
+    }
 }
 
 .side-menu.open {
@@ -1347,26 +1356,28 @@ button {
 }
 
 .side-menu-close {
-    width: 36px;
-    height: 36px;
+    width: 40px; /* Larger touch target */
+    height: 40px;
     border: none;
     background: rgba(255, 255, 255, 0.2);
     color: white;
-    font-size: 20px;
-    border-radius: 8px;
+    font-size: 22px;
+    border-radius: 10px;
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: background 0.2s;
+    transition: all 0.2s;
+    flex-shrink: 0;
 }
 
 .side-menu-close:active {
-    background: rgba(255, 255, 255, 0.3);
+    background: rgba(255, 255, 255, 0.35);
+    transform: scale(0.95);
 }
 
 .side-menu-nav {
-    padding: 12px;
+    padding: 8px 12px; /* Reduce top/bottom padding */
     flex: 1;
 }
 
@@ -1374,26 +1385,32 @@ button {
     width: 100%;
     display: flex;
     align-items: center;
-    gap: 12px;
-    padding: 14px 16px;
+    gap: 14px; /* Slightly larger gap between icon and text */
+    padding: 14px 18px; /* More horizontal padding */
     border: none;
     background: transparent;
     color: var(--text-primary);
     font-size: 16px;
     font-weight: 500;
     text-align: left;
-    border-radius: 10px;
+    border-radius: 12px; /* More rounded */
     cursor: pointer;
-    margin-bottom: 6px;
-    transition: background 0.2s;
+    margin-bottom: 4px; /* Tighter spacing */
+    transition: all 0.2s;
 }
 
-.menu-item span {
-    font-size: 20px;
+.menu-item span:first-child {
+    font-size: 22px; /* Slightly larger icons */
+    width: 28px; /* Fixed width for alignment */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
 }
 
 .menu-item:active {
     background: var(--background);
+    transform: scale(0.98); /* Subtle press effect */
 }
 
 /* ==================== OVERLAY ==================== */
@@ -1403,11 +1420,13 @@ button {
     left: 0;
     width: 100%;
     height: 100%;
-    background: rgba(0, 0, 0, 0.5);
+    background: rgba(0, 0, 0, 0.6); /* Slightly darker */
     opacity: 0;
     pointer-events: none;
     transition: opacity 0.3s;
     z-index: 150;
+    backdrop-filter: blur(2px); /* Subtle blur effect */
+    -webkit-backdrop-filter: blur(2px);
 }
 
 .mobile-overlay.visible {
