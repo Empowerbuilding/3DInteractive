@@ -655,10 +655,42 @@ button {
     color: white;
     font-size: 18px;
     border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s;
 }
 
 .icon-btn:hover {
     background: rgba(255,255,255,0.3);
+}
+
+/* Floating Toggle Button - appears when sidebar is collapsed */
+.floating-toggle {
+    position: fixed;
+    left: 16px;
+    top: 16px;
+    width: 44px;
+    height: 44px;
+    background: linear-gradient(135deg, var(--primary-color) 0%, #764ba2 100%);
+    border: none;
+    border-radius: 12px;
+    color: white;
+    font-size: 22px;
+    cursor: pointer;
+    z-index: 250;
+    display: none; /* Hidden by default, shown via JavaScript */
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+    transition: all 0.3s ease;
+}
+
+.floating-toggle:hover {
+    transform: translateX(4px);
+    box-shadow: 0 6px 16px rgba(102, 126, 234, 0.5);
+}
+
+.floating-toggle:active {
+    transform: translateX(2px) scale(0.95);
 }
 
 /* ==================== ADDITIONAL RESPONSIVE ==================== */

@@ -213,11 +213,20 @@ class FloorPlanApp {
             }
         });
         
-        // Sidebar toggle
-        document.getElementById('sidebar-toggle')?.addEventListener('click', () => {
+        // Sidebar toggle (both buttons)
+        const toggleSidebar = () => {
             const sidebar = document.getElementById('sidebar');
-            sidebar?.classList.toggle('collapsed');
-        });
+            const floatingToggle = document.getElementById('floating-toggle');
+            const isCollapsed = sidebar?.classList.toggle('collapsed');
+            
+            // Show/hide floating toggle based on sidebar state
+            if (floatingToggle) {
+                floatingToggle.style.display = isCollapsed ? 'flex' : 'none';
+            }
+        };
+        
+        document.getElementById('sidebar-toggle')?.addEventListener('click', toggleSidebar);
+        document.getElementById('floating-toggle')?.addEventListener('click', toggleSidebar);
     }
     
     setupModeButtons() {
