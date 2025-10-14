@@ -190,15 +190,6 @@ class MobileFloorPlanApp {
             }
         });
 
-        // Update 3D FAB
-        document.getElementById('mobile-update-3d')?.addEventListener('click', () => {
-            this.update3DModel();
-            // Show brief confirmation
-            const fab = document.getElementById('mobile-update-3d');
-            fab.style.transform = 'scale(1.1)';
-            setTimeout(() => { fab.style.transform = 'scale(1)'; }, 200);
-        });
-
         // Floor Management
         document.getElementById('mobile-add-floor')?.addEventListener('click', () => {
             if (this.floorPlanEditor) {
