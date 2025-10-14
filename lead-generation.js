@@ -266,6 +266,138 @@ window.handleLeadSubmit = async function handleLeadSubmit() {
     }
 };
 
+/**
+ * Capture multiple camera angles of the 3D building model
+ * @param {Object} threejsGenerator - The Three.js generator instance
+ * @param {Object} statusText - Status text element for user feedback
+ * @returns {Array} Array of {name, blob} objects for each angle captured
+ */
+async function captureMultipleAngles(threejsGenerator, statusText) {
+    console.log('📸 Starting multi-angle capture...');
+    
+    // Store original camera position and target
+    const originalCameraPosition = threejsGenerator.camera.position.clone();
+    const originalTarget = threejsGenerator.controls.target.clone();
+    
+    // Define 3 camera angles with names
+    const cameraAngles = [
+        {
+            name: 'front-right-corner',
+            position: { x: 30, y: 15, z: 30 },
+            lookAt: { x: 0, y: 5, z: 0 }
+        },
+        {
+            name: 'side-view',
+            position: { x: -35, y: 12, z: 5 },
+            lookAt: { x: 0, y: 5, z: 0 }
+        },
+        {
+            name: 'opposite-corner',
+            position: { x: 25, y: 20, z: -25 },
+            lookAt: { x: 0, y: 5, z: 0 }
+        }
+    ];
+    
+    const capturedAngles = [];
+    let successfulCaptures = 0;
+    
+    // Update status for user feedback
+    if (statusText) {
+        statusText.textContent = '📸 Capturing 3 angles...';
+    }
+    
+    // Loop through each camera angle
+    for (let i = 0; i < cameraAngles.length; i++) {
+        const angle = cameraAngles[i];
+        
+        try {
+            console.log(`📸 Capturing angle ${i + 1}/3: ${angle.name}`);
+            
+            // Move camera to this angle
+            threejsGenerator.camera.position.set(
+                angle.position.x,
+                angle.position.y,
+                angle.position.z
+            );
+            
+            // Look at the target point
+            threejsGenerator.camera.lookAt(
+                angle.lookAt.x,
+                angle.lookAt.y,
+                angle.lookAt.z
+            );
+            
+            // Update controls to match
+            threejsGenerator.controls.target.set(
+                angle.lookAt.x,
+                angle.lookAt.y,
+                angle.lookAt.z
+            );
+            threejsGenerator.controls.update();
+            
+            // Force a render with new camera position
+            threejsGenerator.renderer.render(threejsGenerator.scene, threejsGenerator.camera);
+            
+            // Small delay to ensure render completes
+            await new Promise(resolve => setTimeout(resolve, 100));
+            
+            // Capture clean screenshot (without grid)
+            let blob;
+            if (threejsGenerator.captureCleanScreenshot) {
+                const dataURL = threejsGenerator.captureCleanScreenshot();
+                blob = await new Promise((resolve, reject) => {
+                    try {
+                        // Convert data URL to blob
+                        const byteString = atob(dataURL.split(',')[1]);
+                        const mimeString = dataURL.split(',')[0].split(':')[1].split(';')[0];
+                        const ab = new ArrayBuffer(byteString.length);
+                        const ia = new Uint8Array(ab);
+                        for (let j = 0; j < byteString.length; j++) {
+                            ia[j] = byteString.charCodeAt(j);
+                        }
+                        const blob = new Blob([ab], { type: mimeString });
+                        resolve(blob);
+                    } catch (error) {
+                        reject(error);
+                    }
+                });
+            } else {
+                // Fallback to canvas capture
+                blob = await new Promise((resolve, reject) => {
+                    const canvas = threejsGenerator.renderer.domElement;
+                    canvas.toBlob((blob) => {
+                        if (blob) resolve(blob);
+                        else reject(new Error('Failed to capture image'));
+                    }, 'image/png', 1.0);
+                });
+            }
+            
+            // Store the captured angle
+            capturedAngles.push({
+                name: angle.name,
+                blob: blob
+            });
+            
+            successfulCaptures++;
+            console.log(`✅ Successfully captured angle ${i + 1}/3: ${angle.name}`);
+            
+        } catch (error) {
+            console.error(`❌ Failed to capture angle ${i + 1}/3 (${angle.name}):`, error);
+            // Continue with next angle instead of failing completely
+        }
+    }
+    
+    // Restore original camera position
+    threejsGenerator.camera.position.copy(originalCameraPosition);
+    threejsGenerator.controls.target.copy(originalTarget);
+    threejsGenerator.controls.update();
+    threejsGenerator.renderer.render(threejsGenerator.scene, threejsGenerator.camera);
+    
+    console.log(`✅ Multi-angle capture complete: ${successfulCaptures}/${cameraAngles.length} angles captured successfully`);
+    
+    return capturedAngles;
+}
+
 async function triggerUpscaleWithLead(leadData, statusText) {
     // Determine if we're on mobile or desktop
     const isMobile = window.innerWidth < 1025;
@@ -364,39 +496,27 @@ async function triggerUpscaleWithLead(leadData, statusText) {
         await new Promise(resolve => setTimeout(resolve, 200));
     }
 
-    console.log('📸 Capturing clean screenshot (no grid lines)...');
-
-    // Use the new clean screenshot function that hides grid and helpers
-    let blob;
-    if (threejsGenerator && threejsGenerator.captureCleanScreenshot) {
-        // Use the clean screenshot method
-        const dataURL = threejsGenerator.captureCleanScreenshot();
-        blob = await new Promise((resolve, reject) => {
-            // Convert data URL to blob
-            const byteString = atob(dataURL.split(',')[1]);
-            const mimeString = dataURL.split(',')[0].split(':')[1].split(';')[0];
-            const ab = new ArrayBuffer(byteString.length);
-            const ia = new Uint8Array(ab);
-            for (let i = 0; i < byteString.length; i++) {
-                ia[i] = byteString.charCodeAt(i);
-            }
-            const blob = new Blob([ab], { type: mimeString });
-            resolve(blob);
-        });
-    } else {
-        // Fallback to original method if clean screenshot not available
-        console.warn('⚠️ Clean screenshot method not available, using fallback');
-        blob = await new Promise((resolve, reject) => {
-            canvas.toBlob((blob) => {
-                if (blob) resolve(blob);
-                else reject(new Error('Failed to capture image'));
-            }, 'image/png', 1.0);
-        });
+    // Capture multiple camera angles instead of single screenshot
+    const capturedAngles = await captureMultipleAngles(threejsGenerator, statusText);
+    
+    if (capturedAngles.length === 0) {
+        throw new Error('Failed to capture any camera angles');
     }
 
-    // Create FormData with lead info and screenshot
+    console.log(`📸 Successfully captured ${capturedAngles.length} angles for AI processing`);
+
+    // Create FormData with lead info and multiple screenshots
     const formData = new FormData();
-    formData.append('screenshot', blob, `3d-model-${leadData.name.replace(/\s+/g, '-')}-${Date.now()}.png`);
+    
+    // Add each captured angle as a separate screenshot
+    capturedAngles.forEach((angle, index) => {
+        const filename = `3d-model-${leadData.name.replace(/\s+/g, '-')}-${angle.name}-${Date.now()}.png`;
+        formData.append(`screenshot_${index}`, angle.blob, filename);
+        console.log(`📎 Added ${angle.name} as screenshot_${index}`);
+    });
+    
+    // Add metadata about number of angles
+    formData.append('numAngles', capturedAngles.length.toString());
     formData.append('leadName', leadData.name);
     formData.append('leadEmail', leadData.email);
     formData.append('leadPhone', leadData.phone);
@@ -454,12 +574,17 @@ async function triggerUpscaleWithLead(leadData, statusText) {
         }
     }
 
+    // Update status to show generation is starting
+    if (statusText) {
+        statusText.textContent = `🚀 Generating ${capturedAngles.length} photorealistic images...`;
+    }
+
     // Send to n8n webhook (fire and forget - no await)
     fetch('https://n8n.empowerbuilding.ai/webhook/4239cad4-0815-4c94-a526-f4335b175aed', {
         method: 'POST',
         body: formData
     }).then(response => {
-        console.log('✅ Webhook request sent successfully');
+        console.log('✅ Webhook request sent successfully with', capturedAngles.length, 'angles');
     }).catch(error => {
         console.error('⚠️ Webhook error (not critical):', error);
     });
