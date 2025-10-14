@@ -460,8 +460,65 @@
     }, 500);
   </script>
 
+  <!-- Lead Generation Modal -->
+  <div class="lead-modal-overlay" id="leadModal">
+    <div class="lead-modal-content">
+      <button class="lead-close-btn" onclick="closeLeadModal()">&times;</button>
+
+      <div class="lead-modal-header">
+        <div class="lead-modal-icon">🏠✨</div>
+        <h2 class="lead-modal-title">Get Your Dream Home Design</h2>
+        <p class="lead-modal-subtitle">
+          We'll create a photorealistic version of your design and send it directly to your email!
+        </p>
+      </div>
+
+      <div class="lead-form-group">
+        <label class="lead-form-label">Full Name *</label>
+        <input 
+          type="text" 
+          id="leadNameInput" 
+          class="lead-form-input" 
+          placeholder="John Smith"
+        >
+        <p class="lead-error-message" id="leadNameError">Name is required</p>
+      </div>
+
+      <div class="lead-form-group">
+        <label class="lead-form-label">Email Address *</label>
+        <input 
+          type="email" 
+          id="leadEmailInput" 
+          class="lead-form-input" 
+          placeholder="john@example.com"
+        >
+        <p class="lead-error-message" id="leadEmailError">Please enter a valid email</p>
+      </div>
+
+      <div class="lead-form-group">
+        <label class="lead-form-label">Phone Number *</label>
+        <input 
+          type="tel" 
+          id="leadPhoneInput" 
+          class="lead-form-input" 
+          placeholder="(555) 123-4567"
+        >
+        <p class="lead-error-message" id="leadPhoneError">Please enter a valid phone number</p>
+      </div>
+
+      <button class="lead-submit-btn" id="leadSubmitBtn" onclick="handleLeadSubmit()">
+        ✨ Generate My Design
+      </button>
+
+      <p class="lead-privacy-note">
+        🔒 Your information is secure and will only be used to send you your design images.
+      </p>
+    </div>
+  </div>
+
   <!-- Application Scripts -->
   <script type="module" src="app.js"></script>
   <script type="module" src="mobile-app.js"></script>
+  <script src="lead-generation.js"></script>
 </body>
 </html>

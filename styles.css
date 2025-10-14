@@ -1317,3 +1317,179 @@ button {
 #mobile-upscale-status {
     transition: color 0.3s ease;
 }
+
+/* ==================== LEAD GENERATION MODAL ==================== */
+.lead-modal-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.7);
+    z-index: 10000;
+    padding: 20px;
+    animation: fadeIn 0.3s ease;
+    align-items: center;
+    justify-content: center;
+}
+
+.lead-modal-overlay.active {
+    display: flex;
+}
+
+.lead-modal-content {
+    background: white;
+    border-radius: 20px;
+    max-width: 500px;
+    width: 100%;
+    padding: 40px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    animation: slideUp 0.3s ease;
+    position: relative;
+    max-height: 90vh;
+    overflow-y: auto;
+}
+
+.lead-close-btn {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    background: none;
+    border: none;
+    font-size: 32px;
+    cursor: pointer;
+    color: #666;
+    line-height: 1;
+    padding: 4px 12px;
+    transition: color 0.2s;
+}
+
+.lead-close-btn:hover {
+    color: #000;
+}
+
+.lead-modal-header {
+    text-align: center;
+    margin-bottom: 32px;
+}
+
+.lead-modal-icon {
+    font-size: 48px;
+    margin-bottom: 16px;
+}
+
+.lead-modal-title {
+    margin: 0;
+    font-size: 28px;
+    font-weight: 700;
+    color: #1f2937;
+    margin-bottom: 8px;
+}
+
+.lead-modal-subtitle {
+    margin: 0;
+    font-size: 16px;
+    color: #6b7280;
+    line-height: 1.5;
+}
+
+.lead-form-group {
+    margin-bottom: 20px;
+}
+
+.lead-form-label {
+    display: block;
+    font-size: 14px;
+    font-weight: 600;
+    color: #374151;
+    margin-bottom: 8px;
+}
+
+.lead-form-input {
+    width: 100%;
+    padding: 12px 16px;
+    font-size: 16px;
+    border: 2px solid #e5e7eb;
+    border-radius: 10px;
+    outline: none;
+    transition: border-color 0.2s;
+}
+
+.lead-form-input:focus {
+    border-color: #667eea;
+}
+
+.lead-form-input.error {
+    border-color: #ef4444;
+}
+
+.lead-error-message {
+    color: #ef4444;
+    font-size: 13px;
+    margin-top: 6px;
+    display: none;
+}
+
+.lead-error-message.visible {
+    display: block;
+}
+
+.lead-submit-btn {
+    width: 100%;
+    padding: 16px;
+    font-size: 18px;
+    font-weight: 700;
+    color: white;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border: none;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.2s;
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+    margin-top: 28px;
+}
+
+.lead-submit-btn:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(102, 126, 234, 0.4);
+}
+
+.lead-submit-btn:disabled {
+    background: #9ca3af;
+    cursor: not-allowed;
+}
+
+.lead-privacy-note {
+    margin-top: 20px;
+    font-size: 12px;
+    color: #9ca3af;
+    text-align: center;
+    line-height: 1.5;
+}
+
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Mobile optimizations */
+@media (max-width: 640px) {
+    .lead-modal-content {
+        padding: 30px 24px;
+    }
+
+    .lead-modal-title {
+        font-size: 24px;
+    }
+
+    .lead-modal-subtitle {
+        font-size: 14px;
+    }
+}
