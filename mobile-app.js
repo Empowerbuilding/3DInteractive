@@ -261,7 +261,7 @@ class MobileFloorPlanApp {
         // ==================== MOBILE 3D MODEL UPSCALE BUTTON ====================
         // Mobile upscale button - open lead generation modal
         document.getElementById('mobile-upscale-3d')?.addEventListener('click', () => {
-            openLeadModal();
+            window.openLeadModal();
         });
 
         // Hamburger Menu

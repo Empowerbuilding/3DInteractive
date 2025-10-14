@@ -33,21 +33,22 @@ document.addEventListener('DOMContentLoaded', () => {
     if (modal) {
         modal.addEventListener('click', function(e) {
             if (e.target === this) {
-                closeLeadModal();
+                window.closeLeadModal();
             }
         });
     }
 });
 
-function openLeadModal() {
+// Expose functions to window object for ES6 module access
+window.openLeadModal = function openLeadModal() {
     const modal = document.getElementById('leadModal');
     if (modal) {
         modal.classList.add('active');
         document.body.style.overflow = 'hidden';
     }
-}
+};
 
-function closeLeadModal() {
+window.closeLeadModal = function closeLeadModal() {
     const modal = document.getElementById('leadModal');
     if (modal) {
         modal.classList.remove('active');
@@ -64,7 +65,7 @@ function closeLeadModal() {
             msg.classList.remove('visible');
         });
     }
-}
+};
 
 function validateLeadForm() {
     let isValid = true;
@@ -98,7 +99,8 @@ function validateLeadForm() {
     return isValid;
 }
 
-async function handleLeadSubmit() {
+// Expose to window object for onclick handler in HTML
+window.handleLeadSubmit = async function handleLeadSubmit() {
     if (!validateLeadForm()) {
         return;
     }
@@ -125,7 +127,7 @@ async function handleLeadSubmit() {
 
     try {
         // Close modal first
-        closeLeadModal();
+        window.closeLeadModal();
         
         // Trigger the actual upscale with lead data
         await triggerUpscaleWithLead(leadData, statusText);
@@ -137,7 +139,7 @@ async function handleLeadSubmit() {
         submitBtn.disabled = false;
         submitBtn.textContent = '✨ Generate My Design';
     }
-}
+};
 
 async function triggerUpscaleWithLead(leadData, statusText) {
     // Determine if we're on mobile or desktop

@@ -109,7 +109,7 @@ class FloorPlanApp {
         // ==================== 3D MODEL UPSCALE BUTTON ====================
         // Desktop upscale button - open lead generation modal
         document.getElementById('upscale-3d-btn')?.addEventListener('click', () => {
-            openLeadModal();
+            window.openLeadModal();
         });
         
         // PATIO CONTROLS
