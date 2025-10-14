@@ -1,4 +1,4 @@
-// 2D Floor Plan Designer Application + 3D Viewer
+// Concept Studio - 3D Building Designer Application
 // Integrated dual-view system
 
 import { FloorPlanEditor } from './floorplan-editor.js';
@@ -6,7 +6,7 @@ import { ThreeJSGenerator } from './threejs-generator.js';
 
 class FloorPlanApp {
     constructor() {
-        console.log('🏗️ Initializing 2D Floor Plan Designer + 3D Viewer...');
+        console.log('🏗️ Initializing Concept Studio...');
         
         // Initialize 2D floor plan editor
         this.floorPlanEditor = new FloorPlanEditor('floor-plan-canvas');
@@ -340,7 +340,7 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
     }
     
-    console.log('DOM loaded, initializing Floor Plan Designer + 3D Viewer...');
+    console.log('DOM loaded, initializing Concept Studio...');
     const floorPlanApp = new FloorPlanApp();
     window.floorPlanApp = floorPlanApp;
     console.log('✅ Application initialized successfully');

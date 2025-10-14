@@ -1,5 +1,5 @@
 // mobile-app.js
-// Mobile-specific functionality for the Floor Plan Designer
+// Mobile-specific functionality for Concept Studio
 
 import { FloorPlanEditor } from './floorplan-editor.js';
 import { ThreeJSGenerator } from './threejs-generator.js';
@@ -560,7 +560,7 @@ class MobileFloorPlanApp {
                 } else if (action === 'export') {
                     this.exportDesign();
                 } else if (action === 'help') {
-                    alert('Floor Plan Designer Help:\n\n' +
+                    alert('Concept Studio Help:\n\n' +
                           '1. Draw walls by tapping and dragging\n' +
                           '2. Add doors/windows by selecting tool and tapping walls\n' +
                           '3. Switch to 3D view to see your design\n' +
