@@ -307,19 +307,19 @@ async function triggerUpscaleWithLead(leadData, statusText) {
         // Human eye level height (6 feet = ~1.8 meters)
         const eyeLevel = 1.8;
         
-        // Calculate optimal distance - far enough to see whole building but close enough to fill frame
-        // Distance formula: size / (2 * tan(fov/2)) with some padding
+        // Calculate optimal distance - INCREASED for fuller building capture
+        // Distance formula: size / (2 * tan(fov/2)) with MORE padding for complete view
         const fovRadians = (threejsGenerator.camera.fov * Math.PI) / 180;
-        const optimalDistance = (buildingSize * 1.2) / (2 * Math.tan(fovRadians / 2));
+        const optimalDistance = (buildingSize * 2.0) / (2 * Math.tan(fovRadians / 2));  // Increased from 1.2 to 2.0
         
         // Position camera in front of building at eye level, looking UP at it
         // Place camera to the front-right for a nice 3/4 view angle
-        const cameraX = buildingCenterX + buildingSize * 0.6;  // Offset to the side
+        const cameraX = buildingCenterX + buildingSize * 0.7;  // Increased side offset for better angle
         const cameraY = eyeLevel;  // 6 feet off ground
-        const cameraZ = buildingCenterZ + optimalDistance;  // In front of building
+        const cameraZ = buildingCenterZ + optimalDistance;  // In front of building (now farther)
         
-        // Calculate the point to look at (slightly above center to avoid seeing roof)
-        const lookAtY = buildingHeight * 0.4;  // Look at middle-upper part of building
+        // Calculate the point to look at (center of building for full view)
+        const lookAtY = buildingHeight * 0.35;  // Look at center-lower for more building in frame
         
         threejsGenerator.camera.position.set(cameraX, cameraY, cameraZ);
         threejsGenerator.camera.lookAt(buildingCenterX, lookAtY, buildingCenterZ);
