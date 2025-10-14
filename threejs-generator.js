@@ -108,8 +108,8 @@ export class ThreeJSGenerator {
         this.scene.add(ground);
         
         // Grid
-        const gridHelper = new THREE.GridHelper(100, 50, 0x444444, 0x888888);
-        this.scene.add(gridHelper);
+        this.gridHelper = new THREE.GridHelper(100, 50, 0x444444, 0x888888);
+        this.scene.add(this.gridHelper);
         
         // Initialize materials
         this.initMaterials();
@@ -1336,6 +1336,36 @@ export class ThreeJSGenerator {
         requestAnimationFrame(() => this.animate());
         this.controls.update();
         this.renderer.render(this.scene, this.camera);
+    }
+    
+    /**
+     * Capture a clean screenshot without grid lines or helpers for AI upscaling
+     * @returns {string} Data URL of the clean screenshot
+     */
+    captureCleanScreenshot() {
+        console.log('📸 Capturing clean screenshot (hiding grid and helpers)...');
+        
+        // Store original visibility states
+        const originalGridVisibility = this.gridHelper.visible;
+        
+        // Hide grid and any other helpers
+        this.gridHelper.visible = false;
+        
+        // Render one clean frame
+        this.controls.update();
+        this.renderer.render(this.scene, this.camera);
+        
+        // Capture screenshot
+        const dataURL = this.renderer.domElement.toDataURL('image/png', 1.0);
+        
+        // Restore original visibility states
+        this.gridHelper.visible = originalGridVisibility;
+        
+        // Render again to restore normal view
+        this.renderer.render(this.scene, this.camera);
+        
+        console.log('✅ Clean screenshot captured, grid restored');
+        return dataURL;
     }
     
     onWindowResize() {

@@ -364,15 +364,35 @@ async function triggerUpscaleWithLead(leadData, statusText) {
         await new Promise(resolve => setTimeout(resolve, 200));
     }
 
-    console.log('📸 Capturing optimized view...');
+    console.log('📸 Capturing clean screenshot (no grid lines)...');
 
-    // Convert canvas to blob
-    const blob = await new Promise((resolve, reject) => {
-        canvas.toBlob((blob) => {
-            if (blob) resolve(blob);
-            else reject(new Error('Failed to capture image'));
-        }, 'image/png', 1.0);
-    });
+    // Use the new clean screenshot function that hides grid and helpers
+    let blob;
+    if (threejsGenerator && threejsGenerator.captureCleanScreenshot) {
+        // Use the clean screenshot method
+        const dataURL = threejsGenerator.captureCleanScreenshot();
+        blob = await new Promise((resolve, reject) => {
+            // Convert data URL to blob
+            const byteString = atob(dataURL.split(',')[1]);
+            const mimeString = dataURL.split(',')[0].split(':')[1].split(';')[0];
+            const ab = new ArrayBuffer(byteString.length);
+            const ia = new Uint8Array(ab);
+            for (let i = 0; i < byteString.length; i++) {
+                ia[i] = byteString.charCodeAt(i);
+            }
+            const blob = new Blob([ab], { type: mimeString });
+            resolve(blob);
+        });
+    } else {
+        // Fallback to original method if clean screenshot not available
+        console.warn('⚠️ Clean screenshot method not available, using fallback');
+        blob = await new Promise((resolve, reject) => {
+            canvas.toBlob((blob) => {
+                if (blob) resolve(blob);
+                else reject(new Error('Failed to capture image'));
+            }, 'image/png', 1.0);
+        });
+    }
 
     // Create FormData with lead info and screenshot
     const formData = new FormData();
