@@ -154,24 +154,35 @@ function validateLeadForm() {
 
 // NEW: Separate function to show notification immediately
 function showEmailNotification() {
+    console.log('🔔 showEmailNotification called');
     const isMobileView = window.innerWidth < 1025;
+    console.log('📱 Mobile view detected:', isMobileView);
+    
     const notificationModal = document.createElement('div');
+    notificationModal.id = 'emailNotificationModal';
+    
+    // CRITICAL: High z-index to appear above mobile layout (99999) and lead modal (999999)
     notificationModal.style.cssText = `
         position: fixed;
         top: 0;
         left: 0;
         right: 0;
         bottom: 0;
+        width: 100vw;
+        height: 100vh;
         background: rgba(0,0,0,${isMobileView ? '0.9' : '0.8'});
-        display: flex;
+        display: flex !important;
+        visibility: visible !important;
+        opacity: 1 !important;
         align-items: center;
         justify-content: center;
-        z-index: 10000;
-        padding: 20px;
+        z-index: 1000000;
+        padding: ${isMobileView ? '24px' : '20px'};
         animation: fadeIn 0.3s;
     `;
+    
     notificationModal.innerHTML = `
-        <div style="background: white; border-radius: ${isMobileView ? '20px' : '16px'}; padding: ${isMobileView ? '28px' : '32px'}; max-width: ${isMobileView ? '100%' : '500px'}; ${isMobileView ? 'width: 100%;' : ''} text-align: center; box-shadow: 0 10px 40px rgba(0,0,0,0.3);">
+        <div style="background: white; border-radius: ${isMobileView ? '20px' : '16px'}; padding: ${isMobileView ? '32px 24px' : '32px'}; max-width: ${isMobileView ? '95%' : '500px'}; width: ${isMobileView ? '95%' : 'auto'}; text-align: center; box-shadow: 0 10px 40px rgba(0,0,0,0.3); z-index: 1000001; position: relative;">
             <div style="font-size: ${isMobileView ? '72px' : '64px'}; margin-bottom: 16px;">📧</div>
             <h2 style="margin: 0 0 16px 0; font-size: ${isMobileView ? '22px' : '24px'}; font-weight: 700; color: #1f2937;">Check Your Email!</h2>
             <p style="margin: 0 0 ${isMobileView ? '20px' : '24px'} 0; font-size: ${isMobileView ? '15px' : '16px'}; color: #6b7280; line-height: 1.6;">
@@ -182,16 +193,21 @@ function showEmailNotification() {
                     ⏱️ Processing your 3D model with AI...
                 </p>
             </div>
-            <button onclick="this.closest('div').parentElement.remove()" style="width: 100%; padding: ${isMobileView ? '16px' : '14px'}; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; border-radius: 12px; cursor: pointer; font-weight: 700; font-size: 16px; ${isMobileView ? 'min-height: 48px;' : ''} transition: transform 0.2s;">
+            <button onclick="this.closest('div').parentElement.remove()" style="width: 100%; padding: ${isMobileView ? '16px' : '14px'}; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; border-radius: 12px; cursor: pointer; font-weight: 700; font-size: 16px; min-height: ${isMobileView ? '52px' : '48px'}; transition: transform 0.2s; box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);">
                 Got it!
             </button>
         </div>
     `;
+    
     document.body.appendChild(notificationModal);
+    console.log('✅ Email notification modal appended to body');
+    console.log('📊 Modal computed z-index:', window.getComputedStyle(notificationModal).zIndex);
+    console.log('📊 Modal computed display:', window.getComputedStyle(notificationModal).display);
 
     // Click/tap outside to close
     notificationModal.addEventListener('click', (e) => {
         if (e.target === notificationModal) {
+            console.log('👆 Notification closed by clicking outside');
             notificationModal.remove();
         }
     });
@@ -199,6 +215,7 @@ function showEmailNotification() {
     // Auto-close after 10 seconds
     setTimeout(() => {
         if (document.body.contains(notificationModal)) {
+            console.log('⏰ Auto-closing notification after 10 seconds');
             notificationModal.remove();
         }
     }, 10000);
@@ -227,9 +244,15 @@ window.handleLeadSubmit = async function handleLeadSubmit() {
 
     try {
         // Close modal first
+        console.log('🔴 Closing lead modal...');
         window.closeLeadModal();
         
-        // SHOW SUCCESS NOTIFICATION IMMEDIATELY (before webhook)
+        // Wait 400ms for lead modal to fully close (animation is 300ms)
+        console.log('⏳ Waiting 400ms for modal close animation...');
+        await new Promise(resolve => setTimeout(resolve, 400));
+        
+        // SHOW SUCCESS NOTIFICATION AFTER MODAL CLOSES (prevents z-index conflicts)
+        console.log('📧 Showing email notification...');
         showEmailNotification();
         
         // Trigger the actual upscale with lead data (async in background)
