@@ -32,6 +32,18 @@
       <button id="sidebar-toggle" class="icon-btn" title="Toggle Sidebar">☰</button>
     </div>
 
+    <!-- PROMINENT GENERATE BUTTON -->
+    <div class="sidebar-hero-section">
+      <button id="upscale-3d-btn" class="btn-hero-generate">
+        <span class="hero-icon">✨</span>
+        <div class="hero-text">
+          <span class="hero-title">Generate Photos</span>
+          <span class="hero-subtitle">AI-Powered Renders</span>
+        </div>
+      </button>
+      <p id="upscale-status" class="status-text"></p>
+    </div>
+
     <!-- SECTION: Drawing Tools -->
     <div class="sidebar-section">
       <h3 class="section-title">🎨 Drawing & Editing</h3>
@@ -165,14 +177,32 @@
       </div>
     </div>
 
-    <!-- SECTION: AI Enhancement -->
-    <div class="sidebar-section">
-      <h3 class="section-title">✨ AI Enhancement</h3>
-      <button id="upscale-3d-btn" class="btn-primary full-width">
-        <span>📸</span>
-        <span>Generate Photorealistic</span>
-      </button>
-      <p id="upscale-status" class="status-text"></p>
+    <!-- SECTION: Model Stats -->
+    <div class="sidebar-section collapsible">
+      <h3 class="section-title collapsible-header">
+        <span>📊 Model Stats</span>
+        <span class="collapse-icon">▼</span>
+      </h3>
+      <div class="collapsible-content">
+        <div class="stat-grid">
+          <div class="stat-card">
+            <span class="stat-card-value" id="stat-floors">1</span>
+            <span class="stat-card-label">Floors</span>
+          </div>
+          <div class="stat-card">
+            <span class="stat-card-value" id="stat-walls">0</span>
+            <span class="stat-card-label">Walls</span>
+          </div>
+          <div class="stat-card">
+            <span class="stat-card-value" id="stat-doors">0</span>
+            <span class="stat-card-label">Doors</span>
+          </div>
+          <div class="stat-card">
+            <span class="stat-card-value" id="stat-windows">0</span>
+            <span class="stat-card-label">Windows</span>
+          </div>
+        </div>
+      </div>
     </div>
 
     <!-- SECTION: Actions -->
@@ -216,25 +246,6 @@
             <li>Right Click + Drag: Pan</li>
             <li>Scroll: Zoom</li>
           </ul>
-        </div>
-        <div class="stats-panel">
-          <div class="stats-title">📊 Model Stats</div>
-          <div class="stat-row">
-            <span class="stat-label">Floors:</span>
-            <span class="stat-value" id="stat-floors">1</span>
-          </div>
-          <div class="stat-row">
-            <span class="stat-label">Walls:</span>
-            <span class="stat-value" id="stat-walls">0</span>
-          </div>
-          <div class="stat-row">
-            <span class="stat-label">Doors:</span>
-            <span class="stat-value" id="stat-doors">0</span>
-          </div>
-          <div class="stat-row">
-            <span class="stat-label">Windows:</span>
-            <span class="stat-value" id="stat-windows">0</span>
-          </div>
         </div>
       </div>
     </div>
