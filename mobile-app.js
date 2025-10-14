@@ -253,6 +253,78 @@ class MobileFloorPlanApp {
             }
         });
 
+        // NEW: Floor has roof checkbox
+        document.getElementById('mobile-floor-has-roof')?.addEventListener('change', (e) => {
+            if (this.floorPlanEditor) {
+                this.floorPlanEditor.setCurrentFloorHasRoof(e.target.checked);
+                this.update3DModel();
+            }
+        });
+
+        // NEW: Roof pitch slider
+        document.getElementById('mobile-roof-pitch')?.addEventListener('input', (e) => {
+            const value = parseInt(e.target.value);
+            const display = document.getElementById('mobile-roof-pitch-value');
+            if (display) {
+                display.textContent = `${value}:12`;
+            }
+            if (this.floorPlanEditor) {
+                this.floorPlanEditor.setCurrentFloorRoofPitch(value);
+                this.update3DModel();
+            }
+        });
+
+        // NEW: Roof overhang slider
+        document.getElementById('mobile-roof-overhang')?.addEventListener('input', (e) => {
+            const value = parseFloat(e.target.value);
+            const display = document.getElementById('mobile-roof-overhang-value');
+            if (display) {
+                display.textContent = `${value.toFixed(1)} ft`;
+            }
+            if (this.floorPlanEditor) {
+                this.floorPlanEditor.setCurrentFloorRoofOverhang(value);
+                this.update3DModel();
+            }
+        });
+
+        // NEW: Patio roof checkbox
+        document.getElementById('mobile-patio-has-roof')?.addEventListener('change', (e) => {
+            const hasRoof = e.target.checked;
+            const roofStyle = document.getElementById('mobile-patio-roof-style')?.value || 'flat';
+            
+            if (this.floorPlanEditor) {
+                if (this.floorPlanEditor.selectedPatio !== null) {
+                    this.floorPlanEditor.updatePatioRoofSettings(
+                        this.floorPlanEditor.selectedPatio,
+                        hasRoof,
+                        roofStyle
+                    );
+                } else {
+                    this.floorPlanEditor.updateAllPatioRoofSettings(hasRoof, roofStyle);
+                }
+                this.update3DModel();
+            }
+        });
+
+        // NEW: Patio roof style
+        document.getElementById('mobile-patio-roof-style')?.addEventListener('change', (e) => {
+            const roofStyle = e.target.value;
+            const hasRoof = document.getElementById('mobile-patio-has-roof')?.checked || false;
+            
+            if (this.floorPlanEditor) {
+                if (this.floorPlanEditor.selectedPatio !== null) {
+                    this.floorPlanEditor.updatePatioRoofSettings(
+                        this.floorPlanEditor.selectedPatio,
+                        hasRoof,
+                        roofStyle
+                    );
+                } else {
+                    this.floorPlanEditor.updateAllPatioRoofSettings(hasRoof, roofStyle);
+                }
+                this.update3DModel();
+            }
+        });
+
         // Export
         document.getElementById('mobile-export-design')?.addEventListener('click', () => {
             this.exportDesign();

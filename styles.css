@@ -1556,3 +1556,111 @@ button {
         font-size: 20px !important;
     }
 }
+
+/* ==================== NEW UI/UX REDESIGN STYLES ==================== */
+
+/* ==================== COLLAPSIBLE SECTIONS ==================== */
+.sidebar-section.collapsible .collapsible-header {
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    user-select: none;
+    transition: color 0.2s;
+}
+
+.sidebar-section.collapsible .collapsible-header:hover {
+    color: var(--primary-color);
+}
+
+.sidebar-section.collapsible .collapsible-content {
+    max-height: 500px;
+    overflow: hidden;
+    transition: max-height 0.3s ease, opacity 0.3s ease;
+    opacity: 1;
+}
+
+.sidebar-section.collapsible.collapsed .collapsible-content {
+    max-height: 0;
+    opacity: 0;
+}
+
+.sidebar-section.collapsible .collapse-icon {
+    transition: transform 0.3s ease;
+    font-size: 12px;
+}
+
+.sidebar-section.collapsible.collapsed .collapse-icon {
+    transform: rotate(-90deg);
+}
+
+/* Value badges */
+.value-badge {
+    display: inline-block;
+    background: var(--primary-color);
+    color: white;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 700;
+    margin-left: 4px;
+}
+
+/* Help text */
+.help-text {
+    font-size: 11px;
+    color: var(--text-secondary);
+    margin: 8px 0 0 0;
+    line-height: 1.4;
+}
+
+.mobile-help-text {
+    font-size: 12px;
+    color: var(--text-secondary);
+    margin: 8px 0;
+    padding: 8px 12px;
+    background: #f0f4ff;
+    border-radius: 8px;
+    line-height: 1.4;
+}
+
+/* Status text */
+.status-text {
+    font-size: 12px;
+    margin-top: 8px;
+    color: var(--text-secondary);
+    text-align: center;
+    min-height: 18px;
+}
+
+/* Mobile section titles */
+.mobile-section-title {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin: 16px 0 12px 0;
+    padding-bottom: 8px;
+    border-bottom: 2px solid var(--border);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* Info text in toolbar */
+.info-text {
+    font-size: 13px;
+    color: var(--text-secondary);
+    font-weight: 500;
+}
+
+/* Better slider styling */
+.slider, .mobile-slider {
+    -webkit-appearance: none;
+    appearance: none;
+    background: linear-gradient(to right, var(--primary-color) 0%, var(--primary-color) 50%, var(--border) 50%, var(--border) 100%);
+    outline: none;
+}
+
+.slider::-webkit-slider-thumb,
+.mobile-slider::-webkit-slider-thumb {
+    box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+}

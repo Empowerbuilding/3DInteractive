@@ -28,15 +28,13 @@
   <!-- LEFT SIDEBAR - 2D Floor Plan Tools -->
   <div class="sidebar" id="sidebar">
     <div class="sidebar-header">
-      <h2>2D Floor Plan</h2>
-      <button id="sidebar-toggle" class="icon-btn" title="Toggle Sidebar">
-        ☰
-      </button>
+      <h2>Floor Plan Designer</h2>
+      <button id="sidebar-toggle" class="icon-btn" title="Toggle Sidebar">☰</button>
     </div>
 
-    <!-- Drawing Tools Section -->
+    <!-- SECTION: Drawing Tools -->
     <div class="sidebar-section">
-      <h3 class="section-title">Drawing Tools</h3>
+      <h3 class="section-title">🎨 Drawing & Editing</h3>
       <div class="tool-grid">
         <button id="mode-draw" class="tool-btn active" title="Draw Walls">
           <span class="tool-icon">✏️</span>
@@ -61,144 +59,139 @@
       </div>
     </div>
 
-    <!-- Floor Management Section -->
-    <div class="sidebar-section">
-      <h3 class="section-title">Floor Management</h3>
-      <div class="input-group">
-        <label>Current Floor:</label>
-        <select id="floor-selector">
-          <option value="0" selected>Floor 1</option>
-        </select>
-      </div>
-      <button id="add-floor" class="btn-secondary full-width">+ Add Floor</button>
-      <label class="checkbox-label">
-        <input type="checkbox" id="show-floor-overlay" checked>
-        <span>Show Floor Below</span>
-      </label>
-    </div>
-
-    <!-- Door Style Section -->
-    <div class="sidebar-section">
-      <h3 class="section-title">Door Style</h3>
-      <div class="input-group">
-        <select id="door-style">
-          <option value="swing" selected>Swing Door (3')</option>
-          <option value="pocket">Pocket Door (3')</option>
-          <option value="bifold">Bifold Door (4')</option>
-          <option value="double">Double Door (6')</option>
-        </select>
+    <!-- SECTION: Floor Management -->
+    <div class="sidebar-section collapsible">
+      <h3 class="section-title collapsible-header">
+        <span>🏢 Floor Management</span>
+        <span class="collapse-icon">▼</span>
+      </h3>
+      <div class="collapsible-content">
+        <div class="input-group">
+          <label>Current Floor:</label>
+          <select id="floor-selector">
+            <option value="0" selected>Floor 1</option>
+          </select>
+        </div>
+        <button id="add-floor" class="btn-secondary full-width">+ Add Floor</button>
+        <label class="checkbox-label">
+          <input type="checkbox" id="show-floor-overlay" checked>
+          <span>Show Floor Below</span>
+        </label>
+        
+        <div class="input-group" style="margin-top: 16px;">
+          <label>Wall Height: <span id="wall-height-value" class="value-badge">8ft</span></label>
+          <input type="range" id="wall-height" min="8" max="12" step="0.5" value="8" class="slider" style="width: 100%;">
+        </div>
       </div>
     </div>
 
-    <!-- Patio Options Section -->
-    <div class="sidebar-section">
-      <h3 class="section-title">Patio Options</h3>
-      
-      <label class="checkbox-label">
-        <input type="checkbox" id="patio-has-roof">
-        <span>Add Roof to Patio</span>
-      </label>
-      
-      <div class="input-group">
-        <label>Patio Roof Style:</label>
-        <select id="patio-roof-style">
-          <option value="flat" selected>Flat Roof</option>
-          <option value="gable">Gable Roof</option>
-          <option value="hip">Hip Roof</option>
-        </select>
+    <!-- SECTION: Doors & Windows -->
+    <div class="sidebar-section collapsible">
+      <h3 class="section-title collapsible-header">
+        <span>🚪 Doors & Windows</span>
+        <span class="collapse-icon">▼</span>
+      </h3>
+      <div class="collapsible-content">
+        <div class="input-group">
+          <label>Door Style:</label>
+          <select id="door-style">
+            <option value="swing" selected>Swing Door (3')</option>
+            <option value="pocket">Pocket Door (3')</option>
+            <option value="bifold">Bifold Door (4')</option>
+            <option value="double">Double Door (6')</option>
+          </select>
+        </div>
+        <p class="help-text">💡 Press F to flip door swing direction</p>
       </div>
     </div>
 
-    <!-- AI Enhancement Section -->
+    <!-- SECTION: Roof Settings -->
+    <div class="sidebar-section collapsible">
+      <h3 class="section-title collapsible-header">
+        <span>🏠 Roof Settings</span>
+        <span class="collapse-icon">▼</span>
+      </h3>
+      <div class="collapsible-content">
+        <label class="checkbox-label">
+          <input type="checkbox" id="floor-has-roof">
+          <span>Add Roof to Current Floor</span>
+        </label>
+        <label class="checkbox-label">
+          <input type="checkbox" id="show-roof" checked>
+          <span>Show Roof in 3D</span>
+        </label>
+
+        <div class="input-group">
+          <label>Roof Style:</label>
+          <select id="roof-style">
+            <option value="hip" selected>Hip Roof</option>
+            <option value="gable">Gable Roof</option>
+            <option value="flat">Flat Roof</option>
+          </select>
+        </div>
+
+        <div class="input-group">
+          <label>Pitch: <span id="roof-pitch-value" class="value-badge">6:12</span></label>
+          <input type="range" id="roof-pitch" min="4" max="12" step="1" value="6" class="slider" style="width: 100%;">
+        </div>
+
+        <div class="input-group">
+          <label>Overhang: <span id="roof-overhang-value" class="value-badge">1.0 ft</span></label>
+          <input type="range" id="roof-overhang" min="0" max="3" step="0.5" value="1" class="slider" style="width: 100%;">
+        </div>
+      </div>
+    </div>
+
+    <!-- SECTION: Patio Options -->
+    <div class="sidebar-section collapsible">
+      <h3 class="section-title collapsible-header">
+        <span>🏡 Patio Options</span>
+        <span class="collapse-icon">▼</span>
+      </h3>
+      <div class="collapsible-content">
+        <label class="checkbox-label">
+          <input type="checkbox" id="patio-has-roof">
+          <span>Add Roof to Patio</span>
+        </label>
+        
+        <div class="input-group">
+          <label>Patio Roof Style:</label>
+          <select id="patio-roof-style">
+            <option value="flat" selected>Flat Roof</option>
+            <option value="gable">Gable Roof</option>
+            <option value="hip">Hip Roof</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- SECTION: AI Enhancement -->
     <div class="sidebar-section">
-      <h3 class="section-title">AI Enhancement</h3>
+      <h3 class="section-title">✨ AI Enhancement</h3>
       <button id="upscale-3d-btn" class="btn-primary full-width">
         <span>📸</span>
-        <span>Upscale 3D Model</span>
+        <span>Generate Photorealistic</span>
       </button>
-      <p id="upscale-status" style="font-size: 12px; margin-top: 8px; color: #6b7280; text-align: center; min-height: 18px;"></p>
-      <div style="margin-top: 12px; padding: 12px; background: #f0f4ff; border-radius: 8px; font-size: 11px; color: #667eea;">
-        <strong>✨ AI-Powered Upscaling</strong>
-        <p style="margin: 4px 0 0 0; color: #6b7280;">Captures your 3D model and enhances it using AI for photorealistic quality.</p>
-      </div>
+      <p id="upscale-status" class="status-text"></p>
     </div>
 
-    <!-- Actions Section -->
+    <!-- SECTION: Actions -->
     <div class="sidebar-section">
-      <h3 class="section-title">Actions</h3>
-      <button id="clear-plan" class="btn-danger full-width">Clear Plan</button>
-      <button id="undo" class="btn-secondary full-width">Undo</button>
-      <button id="export-design" class="btn-secondary full-width">Export Design</button>
+      <h3 class="section-title">⚡ Actions</h3>
+      <button id="undo" class="btn-secondary full-width">↩️ Undo</button>
+      <button id="regenerate-3d" class="btn-secondary full-width">🔄 Update 3D</button>
+      <button id="export-design" class="btn-secondary full-width">💾 Export</button>
+      <button id="clear-plan" class="btn-danger full-width">🗑️ Clear Plan</button>
     </div>
   </div>
 
-  <!-- TOP TOOLBAR - 3D Controls (OUTSIDE main-content) -->
+  <!-- TOP TOOLBAR - Simplified -->
   <div class="top-toolbar">
     <div class="toolbar-left">
-      <h1 class="app-title">Floor Plan to 3D</h1>
+      <h1 class="app-title">2D Floor Plan → 3D Model</h1>
     </div>
-
-    <div class="toolbar-center">
-      <!-- 3D View Controls Group -->
-      <div class="control-group">
-        <span class="group-label">3D VIEW</span>
-        <label class="checkbox-inline">
-          <input type="checkbox" id="show-roof" checked>
-          <span>Show Roof</span>
-        </label>
-      </div>
-
-      <!-- Wall Height Control -->
-      <div class="control-group">
-        <label class="slider-label">
-          <span>Wall Height:</span>
-          <span id="wall-height-value" class="value-display">8ft</span>
-        </label>
-        <input type="range" id="wall-height" min="8" max="12" step="0.5" value="8" class="slider">
-      </div>
-
-      <!-- Has Roof Checkbox -->
-      <div class="control-group">
-        <label class="checkbox-inline">
-          <input type="checkbox" id="floor-has-roof">
-          <span>Add Roof to This Floor</span>
-        </label>
-      </div>
-
-      <!-- Roof Style Dropdown -->
-      <div class="control-group">
-        <label>Roof Style (Current Floor):</label>
-        <select id="roof-style" class="compact-select">
-          <option value="hip" selected>Hip Roof</option>
-          <option value="gable">Gable Roof</option>
-          <option value="flat">Flat Roof</option>
-        </select>
-      </div>
-
-      <!-- Roof Pitch Slider -->
-      <div class="control-group">
-        <label class="slider-label">
-          <span>Pitch (Current Floor):</span>
-          <span id="roof-pitch-value" class="value-display">6:12</span>
-        </label>
-        <input type="range" id="roof-pitch" min="4" max="12" step="1" value="6" class="slider">
-      </div>
-
-      <!-- Overhang Slider -->
-      <div class="control-group">
-        <label class="slider-label">
-          <span>Overhang (Current Floor):</span>
-          <span id="roof-overhang-value" class="value-display">1.0 ft</span>
-        </label>
-        <input type="range" id="roof-overhang" min="0" max="3" step="0.5" value="1" class="slider">
-      </div>
-    </div>
-
     <div class="toolbar-right">
-      <button id="regenerate-3d" class="btn-primary">
-        <span>🔄</span>
-        <span>Update 3D</span>
-      </button>
+      <span class="info-text">💡 All controls in left sidebar</span>
     </div>
   </div>
 
@@ -303,42 +296,66 @@
           <span class="tab-icon">✏️</span>
           <span class="tab-label">Draw</span>
         </button>
-        <button class="tab-btn" data-tab="doors">
-          <span class="tab-icon">🚪</span>
-          <span class="tab-label">Doors</span>
+        <button class="tab-btn" data-tab="edit">
+          <span class="tab-icon">✂️</span>
+          <span class="tab-label">Edit</span>
         </button>
-        <button class="tab-btn" data-tab="settings">
-          <span class="tab-icon">⚙️</span>
-          <span class="tab-label">Settings</span>
+        <button class="tab-btn" data-tab="doors-windows">
+          <span class="tab-icon">🚪</span>
+          <span class="tab-label">Doors/Windows</span>
+        </button>
+        <button class="tab-btn" data-tab="floors">
+          <span class="tab-icon">🏢</span>
+          <span class="tab-label">Floors</span>
+        </button>
+        <button class="tab-btn" data-tab="roof-3d">
+          <span class="tab-icon">🏠</span>
+          <span class="tab-label">3D/Roof</span>
+        </button>
+        <button class="tab-btn" data-tab="patios">
+          <span class="tab-icon">🏡</span>
+          <span class="tab-label">Patios</span>
         </button>
       </div>
 
       <!-- Tab Content -->
       <div class="tab-content-container">
+        
         <!-- DRAW TAB -->
         <div class="tab-content active" data-content="draw">
-          <div class="mobile-tool-grid">
-            <button class="mobile-tool-btn active" data-mode="draw">
-              <span class="tool-icon-large">✏️</span>
-              <span class="tool-name">Draw Walls</span>
-            </button>
-            <button class="mobile-tool-btn" data-mode="edit">
-              <span class="tool-icon-large">✂️</span>
-              <span class="tool-name">Edit</span>
-            </button>
-            <button class="mobile-tool-btn" data-mode="patio">
-              <span class="tool-icon-large">🏡</span>
-              <span class="tool-name">Add Patio</span>
-            </button>
+          <div class="mobile-section-title">Drawing Tools</div>
+          <button class="mobile-tool-btn-wide active" data-mode="draw">
+            <span>✏️</span> Draw Walls
+          </button>
+          <div class="mobile-help-text">
+            Tap and drag to draw wall segments. Double-tap or press Enter to finish.
           </div>
-          <button id="mobile-clear-plan" class="mobile-btn-danger full-width">Clear Plan</button>
-          <button id="mobile-undo" class="mobile-btn-secondary full-width">Undo Last</button>
+          
+          <div class="mobile-section-title" style="margin-top: 24px;">Quick Actions</div>
+          <button id="mobile-undo" class="mobile-btn-secondary full-width">
+            <span>↩️</span> Undo Last Action
+          </button>
+          <button id="mobile-clear-plan" class="mobile-btn-danger full-width">
+            <span>🗑️</span> Clear Entire Plan
+          </button>
         </div>
 
-        <!-- DOORS TAB -->
-        <div class="tab-content" data-content="doors">
-          <button class="mobile-tool-btn-wide active" data-mode="door">
-            <span>🚪</span> Place Doors
+        <!-- EDIT TAB -->
+        <div class="tab-content" data-content="edit">
+          <div class="mobile-section-title">Edit Mode</div>
+          <button class="mobile-tool-btn-wide active" data-mode="edit">
+            <span>✂️</span> Edit/Move/Delete
+          </button>
+          <div class="mobile-help-text">
+            Tap walls, doors, windows, or patios to select and edit them. Press Delete to remove selected items.
+          </div>
+        </div>
+
+        <!-- DOORS & WINDOWS TAB -->
+        <div class="tab-content" data-content="doors-windows">
+          <div class="mobile-section-title">Doors</div>
+          <button class="mobile-tool-btn-wide" data-mode="door">
+            <span>🚪</span> Place Door on Wall
           </button>
           <div class="mobile-input-group">
             <label>Door Style:</label>
@@ -349,63 +366,120 @@
               <option value="double">Double Door (6')</option>
             </select>
           </div>
+          <div class="mobile-help-text">
+            Tap on any wall to place a door. Press F to flip door direction.
+          </div>
+
+          <div class="mobile-section-title" style="margin-top: 24px;">Windows</div>
           <button class="mobile-tool-btn-wide" data-mode="window">
-            <span>🪟</span> Place Windows
+            <span>🪟</span> Place Window on Wall
           </button>
+          <div class="mobile-help-text">
+            Tap on any wall to place a window.
+          </div>
         </div>
 
-        <!-- SETTINGS TAB -->
-        <div class="tab-content" data-content="settings">
+        <!-- FLOORS TAB -->
+        <div class="tab-content" data-content="floors">
+          <div class="mobile-section-title">Floor Management</div>
           <div class="mobile-input-group">
-            <label>Floor:</label>
+            <label>Current Floor:</label>
             <select id="mobile-floor-selector" class="mobile-select">
               <option value="0">Floor 1</option>
             </select>
           </div>
-          <button id="mobile-add-floor" class="mobile-btn-secondary full-width">+ Add Floor</button>
-          
+          <button id="mobile-add-floor" class="mobile-btn-secondary full-width">
+            <span>➕</span> Add New Floor
+          </button>
+
+          <div class="mobile-section-title" style="margin-top: 24px;">Floor Settings</div>
           <div class="mobile-input-group">
-            <label>Wall Height: <span id="mobile-wall-height-value">8 ft</span></label>
+            <label>Wall Height: <span id="mobile-wall-height-value" class="value-badge">8 ft</span></label>
             <input type="range" id="mobile-wall-height" min="8" max="12" step="0.5" value="8" class="mobile-slider">
           </div>
 
           <div class="mobile-checkbox-group">
             <label class="mobile-checkbox-label">
-              <input type="checkbox" id="mobile-show-roof" checked>
-              <span>Show Roof</span>
+              <input type="checkbox" id="mobile-show-floor-overlay" checked>
+              <span>Show Floor Below as Overlay</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- 3D & ROOF TAB -->
+        <div class="tab-content" data-content="roof-3d">
+          <div class="mobile-section-title">Roof Settings (Current Floor)</div>
+          
+          <div class="mobile-checkbox-group">
+            <label class="mobile-checkbox-label">
+              <input type="checkbox" id="mobile-floor-has-roof">
+              <span>Add Roof to This Floor</span>
             </label>
             <label class="mobile-checkbox-label">
-              <input type="checkbox" id="mobile-show-floor-overlay" checked>
-              <span>Show Floor Below</span>
+              <input type="checkbox" id="mobile-show-roof" checked>
+              <span>Show Roof in 3D View</span>
             </label>
           </div>
 
           <div class="mobile-input-group">
             <label>Roof Style:</label>
             <select id="mobile-roof-style" class="mobile-select">
-              <option value="hip">Hip Roof</option>
+              <option value="hip" selected>Hip Roof</option>
               <option value="gable">Gable Roof</option>
               <option value="flat">Flat Roof</option>
             </select>
           </div>
 
-          <button id="mobile-export-design" class="mobile-btn-secondary full-width">📥 Export Design</button>
+          <div class="mobile-input-group">
+            <label>Roof Pitch: <span id="mobile-roof-pitch-value" class="value-badge">6:12</span></label>
+            <input type="range" id="mobile-roof-pitch" min="4" max="12" step="1" value="6" class="mobile-slider">
+            <div class="mobile-help-text">Higher pitch = steeper roof</div>
+          </div>
 
-          <!-- AI Enhancement for Mobile -->
-          <div style="margin-top: 20px; padding-top: 20px; border-top: 2px solid var(--border);">
-            <h4 style="font-size: 14px; font-weight: 700; margin-bottom: 12px; color: var(--text-primary);">
-              ✨ AI Enhancement
-            </h4>
-            <button id="mobile-upscale-3d" class="mobile-btn-secondary full-width" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 16px; font-size: 16px; font-weight: 700; border: none;">
-              📸 Upscale 3D Model
-            </button>
-            <p id="mobile-upscale-status" style="font-size: 12px; margin-top: 8px; text-align: center; color: #6b7280; min-height: 18px;"></p>
-            <div style="margin-top: 12px; padding: 12px; background: #f0f4ff; border-radius: 8px; font-size: 11px; color: #667eea;">
-              <strong>How it works:</strong>
-              <p style="margin: 4px 0 0 0; color: #6b7280;">Captures current 3D view and sends to AI for enhancement</p>
-            </div>
+          <div class="mobile-input-group">
+            <label>Roof Overhang: <span id="mobile-roof-overhang-value" class="value-badge">1.0 ft</span></label>
+            <input type="range" id="mobile-roof-overhang" min="0" max="3" step="0.5" value="1" class="mobile-slider">
+            <div class="mobile-help-text">Distance roof extends beyond walls</div>
+          </div>
+
+          <div class="mobile-section-title" style="margin-top: 24px;">AI Enhancement</div>
+          <button id="mobile-upscale-3d" class="mobile-btn-secondary full-width" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 16px; font-size: 16px; font-weight: 700; border: none;">
+            📸 Upscale 3D Model
+          </button>
+          <p id="mobile-upscale-status" style="font-size: 12px; margin-top: 8px; text-align: center; color: #6b7280; min-height: 18px;"></p>
+
+          <div class="mobile-section-title" style="margin-top: 24px;">Export</div>
+          <button id="mobile-export-design" class="mobile-btn-secondary full-width">📥 Export Design</button>
+        </div>
+
+        <!-- PATIOS TAB -->
+        <div class="tab-content" data-content="patios">
+          <div class="mobile-section-title">Add Patio/Deck</div>
+          <button class="mobile-tool-btn-wide" data-mode="patio">
+            <span>🏡</span> Draw Patio Rectangle
+          </button>
+          <div class="mobile-help-text">
+            Tap and drag to create a patio or deck area.
+          </div>
+
+          <div class="mobile-section-title" style="margin-top: 24px;">Patio Roof Options</div>
+          <div class="mobile-checkbox-group">
+            <label class="mobile-checkbox-label">
+              <input type="checkbox" id="mobile-patio-has-roof">
+              <span>Add Roof to Patio</span>
+            </label>
+          </div>
+
+          <div class="mobile-input-group">
+            <label>Patio Roof Style:</label>
+            <select id="mobile-patio-roof-style" class="mobile-select">
+              <option value="flat" selected>Flat Roof</option>
+              <option value="gable">Gable Roof</option>
+              <option value="hip">Hip Roof</option>
+            </select>
           </div>
         </div>
+
       </div>
     </div>
 

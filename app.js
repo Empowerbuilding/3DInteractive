@@ -349,4 +349,14 @@ document.addEventListener('DOMContentLoaded', () => {
     const floorPlanApp = new FloorPlanApp();
     window.floorPlanApp = floorPlanApp;
     console.log('✅ Application initialized successfully');
+
+    // ==================== COLLAPSIBLE SIDEBAR SECTIONS ====================
+    // Setup collapsible functionality for sidebar sections
+    document.querySelectorAll('.collapsible-header').forEach(header => {
+        header.addEventListener('click', () => {
+            const section = header.closest('.sidebar-section');
+            section.classList.toggle('collapsed');
+        });
+    });
+    console.log('✅ Collapsible sections initialized');
 });
