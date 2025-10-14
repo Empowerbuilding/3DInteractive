@@ -666,15 +666,17 @@ button {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 10px 12px;
+    padding: 8px 12px;
     background: linear-gradient(135deg, var(--primary-color) 0%, #764ba2 100%);
     border-bottom: none;
-    height: 56px;
+    min-height: 56px;
+    height: auto;
     flex-shrink: 0;
     box-shadow: 0 2px 8px rgba(0,0,0,0.1);
     z-index: 101;
     position: relative;
     color: white;
+    gap: 8px;
 }
 
 .mobile-icon-btn {
@@ -705,16 +707,17 @@ button {
 }
 
 .mobile-title {
-    font-size: 18px;
+    font-size: 17px;
     font-weight: 700;
     margin: 0;
     color: white;
     flex: 1;
     text-align: center;
-    padding: 0 8px;
+    padding: 0 4px;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+    min-width: 0;
 }
 
 /* Subtle hint animation for hamburger menu */
@@ -725,6 +728,54 @@ button {
 
 .mobile-icon-btn:first-child {
     animation: gentlePulse 2s ease-in-out 1;
+}
+
+/* Mobile Header Generate Button */
+.mobile-generate-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 14px;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.25) 0%, rgba(255, 255, 255, 0.15) 100%);
+    border: 1.5px solid rgba(255, 255, 255, 0.4);
+    color: white;
+    border-radius: 20px;
+    cursor: pointer;
+    transition: all 0.2s;
+    flex-shrink: 0;
+    font-size: 14px;
+    font-weight: 700;
+    height: 40px;
+    backdrop-filter: blur(10px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.mobile-generate-btn:active {
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.35) 0%, rgba(255, 255, 255, 0.25) 100%);
+    transform: scale(0.96);
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
+}
+
+.generate-icon {
+    font-size: 16px;
+    line-height: 1;
+    animation: sparkle 2s ease-in-out infinite;
+}
+
+.generate-text {
+    font-size: 14px;
+    letter-spacing: 0.3px;
+}
+
+@keyframes sparkle {
+    0%, 100% { 
+        opacity: 1;
+        transform: scale(1);
+    }
+    50% { 
+        opacity: 0.8;
+        transform: scale(1.1);
+    }
 }
 
 /* ==================== CANVAS CONTAINER ==================== */

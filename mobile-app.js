@@ -375,22 +375,28 @@ class MobileFloorPlanApp {
             this.openSideMenu();
         });
 
-        // Options Menu Button
-        document.getElementById('mobile-options-btn')?.addEventListener('click', () => {
-            console.log('📋 Options button clicked');
+        // Mobile Header Generate Button
+        document.getElementById('mobile-header-generate-btn')?.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            console.log('🎯 Mobile header generate button clicked!');
             
-            // Show options menu with confirm dialog (simple implementation)
-            const options = [
-                '💾 Export Design',
-                '🔄 New Plan', 
-                '❓ Help'
-            ];
-            
-            const choice = confirm('Options:\n\n1. Export Design\n2. New Plan\n3. Help\n\nPress OK for Export Design, Cancel to dismiss');
-            
-            if (choice) {
-                console.log('📥 Exporting design...');
-                this.exportDesign();
+            if (typeof window.openLeadModal === 'function') {
+                console.log('✅ Opening lead modal via window.openLeadModal');
+                window.openLeadModal();
+            } else {
+                console.warn('⚠️ window.openLeadModal not available, using fallback');
+                
+                // Direct DOM manipulation fallback
+                const modal = document.getElementById('leadModal');
+                if (modal) {
+                    modal.classList.add('active');
+                    document.body.style.overflow = 'hidden';
+                    console.log('✅ Opened modal via DOM manipulation');
+                } else {
+                    console.error('❌ Lead modal element not found!');
+                    alert('Modal not ready. Please try again.');
+                }
             }
         });
     }
