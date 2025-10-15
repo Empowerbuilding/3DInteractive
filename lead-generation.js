@@ -327,11 +327,16 @@ async function captureMultipleAngles(threejsGenerator, statusText) {
     });
     
     // Calculate consistent camera settings
-    const cameraDistance = Math.max(buildingWidth, buildingDepth) * 1.5; // ADJUSTABLE: Higher = farther
+    // Adjust distance for mobile to ensure ground visibility (mobile screens are typically narrower)
+    const isMobile = window.innerWidth < 1025;
+    const distanceMultiplier = isMobile ? 2.2 : 1.5; // Mobile needs more distance to show ground
+    const cameraDistance = Math.max(buildingWidth, buildingDepth) * distanceMultiplier;
     const eyeLevelHeight = buildingHeight * 0.3; // ADJUSTABLE: Lower = more ground-level
     const lookAtHeight = buildingHeight * 0.4; // ADJUSTABLE: Where camera aims vertically
     
     console.log('📐 Camera settings calculated:', {
+        device: isMobile ? 'mobile' : 'desktop',
+        distanceMultiplier: distanceMultiplier,
         distance: cameraDistance.toFixed(2),
         eyeLevel: eyeLevelHeight.toFixed(2),
         lookAt: lookAtHeight.toFixed(2)
@@ -474,7 +479,7 @@ async function triggerUpscaleWithLead(leadData, statusText) {
     const threejsGenerator = window.floorPlanApp?.threejsGenerator || window.mobileApp?.threejsGenerator;
 
     if (threejsGenerator && threejsGenerator.camera && threejsGenerator.controls) {
-        console.log('📸 Setting optimal camera angle for screenshot...');
+        console.log(`📸 Setting optimal camera angle for screenshot (${isMobile ? 'mobile' : 'desktop'})...`);
         
         // Calculate building center and dimensions from the scene
         let minX = Infinity, maxX = -Infinity;
@@ -517,7 +522,8 @@ async function triggerUpscaleWithLead(leadData, statusText) {
         // Calculate optimal distance - Balanced for good framing
         // Distance formula: size / (2 * tan(fov/2)) with moderate padding
         const fovRadians = (threejsGenerator.camera.fov * Math.PI) / 180;
-        const optimalDistance = (buildingSize * 1.5) / (2 * Math.tan(fovRadians / 2));  // Adjusted to 1.5 for better framing
+        const distanceMultiplier = isMobile ? 2.2 : 1.5; // Mobile needs more distance to show ground
+        const optimalDistance = (buildingSize * distanceMultiplier) / (2 * Math.tan(fovRadians / 2));
         
         // Position camera in front of building at eye level, looking UP at it
         // Place camera to the front-right for a nice 3/4 view angle
