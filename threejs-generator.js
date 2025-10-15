@@ -307,6 +307,8 @@ export class ThreeJSGenerator {
         mesh.castShadow = true;
         mesh.receiveShadow = true;
         mesh.userData.isBuilding = true;
+        mesh.userData.isWall = true;
+        mesh.userData.wallMaterial = 'vinyl-siding';
         this.scene.add(mesh);
     }
     
@@ -412,6 +414,7 @@ export class ThreeJSGenerator {
                 doorMesh.rotation.y = angle;
                 doorMesh.castShadow = true;
                 doorMesh.userData.isBuilding = true;
+                doorMesh.userData.isDoor = true;
                 this.scene.add(doorMesh);
                 
                 // Door handle/hardware (small dark rectangle)
@@ -491,6 +494,7 @@ export class ThreeJSGenerator {
                 );
                 windowMesh.rotation.y = angle;
                 windowMesh.userData.isBuilding = true;
+                windowMesh.userData.isWindow = true;
                 this.scene.add(windowMesh);
                 
                 // Window sill (horizontal ledge)
@@ -867,6 +871,8 @@ export class ThreeJSGenerator {
             roofMesh.castShadow = true;
             roofMesh.receiveShadow = true;
             roofMesh.userData.isBuilding = true;
+            roofMesh.userData.isRoof = true;
+            roofMesh.userData.roofMaterial = 'asphalt-shingle';
             this.scene.add(roofMesh);
         }
     }
@@ -1044,6 +1050,8 @@ export class ThreeJSGenerator {
             roofMesh.castShadow = true;
             roofMesh.receiveShadow = true;
             roofMesh.userData.isBuilding = true;
+            roofMesh.userData.isRoof = true;
+            roofMesh.userData.roofMaterial = 'asphalt-shingle';
             this.scene.add(roofMesh);
         }
     }
@@ -1149,6 +1157,8 @@ export class ThreeJSGenerator {
             gableMesh.castShadow = true;
             gableMesh.receiveShadow = true;
             gableMesh.userData.isBuilding = true;
+            gableMesh.userData.isWall = true;
+            gableMesh.userData.wallMaterial = 'vinyl-siding';
             
             this.scene.add(gableMesh);
         });
@@ -1285,6 +1295,8 @@ export class ThreeJSGenerator {
             roofMesh.castShadow = true;
             roofMesh.receiveShadow = true;
             roofMesh.userData.isBuilding = true;
+            roofMesh.userData.isRoof = true;
+            roofMesh.userData.roofMaterial = 'asphalt-shingle';
             this.scene.add(roofMesh);
         }
     }
@@ -1389,6 +1401,8 @@ export class ThreeJSGenerator {
             gableMesh.castShadow = true;
             gableMesh.receiveShadow = true;
             gableMesh.userData.isBuilding = true;
+            gableMesh.userData.isWall = true;
+            gableMesh.userData.wallMaterial = 'vinyl-siding';
             
             this.scene.add(gableMesh);
         });
@@ -1479,6 +1493,430 @@ export class ThreeJSGenerator {
         
         console.log('✅ Clean screenshot captured, grid restored');
         return dataURL;
+    }
+
+    /**
+     * Capture enhanced screenshot with architectural details for AI generation
+     * This adds temporary window frames, door panels, roof lines, etc.
+     * @param {THREE.Camera} camera - The camera to render from
+     * @param {string} angleName - Name of the angle (for logging)
+     * @returns {string} - Data URL of the captured screenshot
+     */
+    async captureEnhancedScreenshotForAI(camera, angleName) {
+        console.log(`📸 Capturing enhanced AI reference: ${angleName}`);
+        
+        // Store original renderer settings
+        const originalSize = new THREE.Vector2();
+        this.renderer.getSize(originalSize);
+        const originalPixelRatio = this.renderer.getPixelRatio();
+        const originalShadows = this.renderer.shadowMap.enabled;
+        const originalGridVisibility = this.gridHelper.visible;
+        
+        // Enhance rendering quality temporarily
+        this.renderer.setSize(2048, 2048);  // High resolution
+        this.renderer.setPixelRatio(2);  // Sharper details
+        this.renderer.shadowMap.enabled = true;
+        this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        
+        // Hide grid for clean capture
+        this.gridHelper.visible = false;
+        
+        // Array to store temporary objects for cleanup
+        const tempObjects = [];
+        
+        // Add architectural details to all objects in scene
+        this.scene.traverse((object) => {
+            // Add window details
+            if (object.userData.isBuilding && object.userData.isWindow) {
+                const windowDetails = this.addWindowDetails(object);
+                tempObjects.push(...windowDetails);
+            }
+            
+            // Add door details
+            if (object.userData.isBuilding && object.userData.isDoor) {
+                const doorDetails = this.addDoorDetails(object);
+                tempObjects.push(...doorDetails);
+            }
+            
+            // Add roof texture lines
+            if (object.userData.isBuilding && object.userData.isRoof) {
+                const roofDetails = this.addRoofDetails(object);
+                tempObjects.push(...roofDetails);
+            }
+            
+            // Add wall siding lines
+            if (object.userData.isBuilding && object.userData.isWall) {
+                const sidingLines = this.addSidingLines(object);
+                tempObjects.push(...sidingLines);
+            }
+            
+            // Add edge lines for clarity
+            if (object.userData.isBuilding && object.isMesh && object.geometry) {
+                const edges = new THREE.EdgesGeometry(object.geometry, 15);
+                const line = new THREE.LineSegments(
+                    edges,
+                    new THREE.LineBasicMaterial({ 
+                        color: 0x000000, 
+                        linewidth: 2,
+                        transparent: true,
+                        opacity: 0.8
+                    })
+                );
+                object.add(line);
+                tempObjects.push(line);
+            }
+        });
+        
+        // Render the enhanced scene
+        this.controls.update();
+        this.renderer.render(this.scene, camera);
+        
+        // Capture as high-quality PNG
+        const dataUrl = this.renderer.domElement.toDataURL('image/png', 1.0);
+        
+        // RESTORE original settings
+        this.renderer.setSize(originalSize.x, originalSize.y);
+        this.renderer.setPixelRatio(originalPixelRatio);
+        this.renderer.shadowMap.enabled = originalShadows;
+        this.gridHelper.visible = originalGridVisibility;
+        
+        // Remove ALL temporary objects
+        tempObjects.forEach(obj => {
+            if (obj.parent) obj.parent.remove(obj);
+            if (obj.geometry) obj.geometry.dispose();
+            if (obj.material) {
+                if (Array.isArray(obj.material)) {
+                    obj.material.forEach(m => m.dispose());
+                } else {
+                    obj.material.dispose();
+                }
+            }
+        });
+        
+        console.log(`✅ Enhanced screenshot captured: ${(dataUrl.length / 1024).toFixed(1)}KB`);
+        return dataUrl;
+    }
+
+    /**
+     * Add detailed window frames, glass, and mullions
+     */
+    addWindowDetails(windowObject) {
+        const details = [];
+        
+        // Get window dimensions
+        const bbox = new THREE.Box3().setFromObject(windowObject);
+        const size = new THREE.Vector3();
+        bbox.getSize(size);
+        const width = size.x || 1;
+        const height = size.y || 1.5;
+        const depth = 0.15;
+        
+        // Window frame material (dark trim)
+        const frameThickness = 0.08;
+        const frameMaterial = new THREE.MeshStandardMaterial({
+            color: 0x2c2c2c,  // Dark gray/black
+            roughness: 0.7,
+            metalness: 0.1
+        });
+        
+        // Top frame
+        const topFrame = new THREE.Mesh(
+            new THREE.BoxGeometry(width + frameThickness * 2, frameThickness, depth),
+            frameMaterial
+        );
+        topFrame.position.copy(windowObject.position);
+        topFrame.position.y += height/2 + frameThickness/2;
+        topFrame.rotation.copy(windowObject.rotation);
+        this.scene.add(topFrame);
+        details.push(topFrame);
+        
+        // Bottom frame
+        const bottomFrame = new THREE.Mesh(
+            new THREE.BoxGeometry(width + frameThickness * 2, frameThickness, depth),
+            frameMaterial
+        );
+        bottomFrame.position.copy(windowObject.position);
+        bottomFrame.position.y -= height/2 + frameThickness/2;
+        bottomFrame.rotation.copy(windowObject.rotation);
+        this.scene.add(bottomFrame);
+        details.push(bottomFrame);
+        
+        // Left frame
+        const leftFrame = new THREE.Mesh(
+            new THREE.BoxGeometry(frameThickness, height, depth),
+            frameMaterial
+        );
+        leftFrame.position.copy(windowObject.position);
+        leftFrame.position.x -= width/2 + frameThickness/2;
+        leftFrame.rotation.copy(windowObject.rotation);
+        this.scene.add(leftFrame);
+        details.push(leftFrame);
+        
+        // Right frame
+        const rightFrame = new THREE.Mesh(
+            new THREE.BoxGeometry(frameThickness, height, depth),
+            frameMaterial
+        );
+        rightFrame.position.copy(windowObject.position);
+        rightFrame.position.x += width/2 + frameThickness/2;
+        rightFrame.rotation.copy(windowObject.rotation);
+        this.scene.add(rightFrame);
+        details.push(rightFrame);
+        
+        // Mullion material (window dividers)
+        const mullionMaterial = new THREE.MeshStandardMaterial({
+            color: 0x404040,
+            roughness: 0.6
+        });
+        
+        // Vertical mullion (center)
+        const verticalMullion = new THREE.Mesh(
+            new THREE.BoxGeometry(0.04, height, depth),
+            mullionMaterial
+        );
+        verticalMullion.position.copy(windowObject.position);
+        verticalMullion.rotation.copy(windowObject.rotation);
+        this.scene.add(verticalMullion);
+        details.push(verticalMullion);
+        
+        // Horizontal mullion (center)
+        const horizontalMullion = new THREE.Mesh(
+            new THREE.BoxGeometry(width, 0.04, depth),
+            mullionMaterial
+        );
+        horizontalMullion.position.copy(windowObject.position);
+        horizontalMullion.rotation.copy(windowObject.rotation);
+        this.scene.add(horizontalMullion);
+        details.push(horizontalMullion);
+        
+        // Update window to be semi-transparent glass
+        if (windowObject.material) {
+            const originalMaterial = windowObject.material;
+            windowObject.material = new THREE.MeshPhysicalMaterial({
+                color: 0x88ccff,  // Blue tint
+                transparent: true,
+                opacity: 0.3,
+                roughness: 0.1,
+                metalness: 0.1,
+                transmission: 0.9,
+                thickness: 0.01
+            });
+            // Store original to restore later
+            windowObject.userData.originalMaterial = originalMaterial;
+        }
+        
+        return details;
+    }
+
+    /**
+     * Add door frame, panels, and handle
+     */
+    addDoorDetails(doorObject) {
+        const details = [];
+        
+        // Get door dimensions
+        const bbox = new THREE.Box3().setFromObject(doorObject);
+        const size = new THREE.Vector3();
+        bbox.getSize(size);
+        const width = size.x || 1;
+        const height = size.y || 2.2;
+        const depth = 0.15;
+        
+        // Door frame (white trim)
+        const frameThickness = 0.1;
+        const frameMaterial = new THREE.MeshStandardMaterial({
+            color: 0xffffff,  // White
+            roughness: 0.6
+        });
+        
+        // Top frame
+        const topFrame = new THREE.Mesh(
+            new THREE.BoxGeometry(width + frameThickness * 2, frameThickness, depth),
+            frameMaterial
+        );
+        topFrame.position.copy(doorObject.position);
+        topFrame.position.y += height/2 + frameThickness/2;
+        topFrame.rotation.copy(doorObject.rotation);
+        this.scene.add(topFrame);
+        details.push(topFrame);
+        
+        // Left frame
+        const leftFrame = new THREE.Mesh(
+            new THREE.BoxGeometry(frameThickness, height + frameThickness, depth),
+            frameMaterial
+        );
+        leftFrame.position.copy(doorObject.position);
+        leftFrame.position.x -= width/2 + frameThickness/2;
+        leftFrame.rotation.copy(doorObject.rotation);
+        this.scene.add(leftFrame);
+        details.push(leftFrame);
+        
+        // Right frame
+        const rightFrame = new THREE.Mesh(
+            new THREE.BoxGeometry(frameThickness, height + frameThickness, depth),
+            frameMaterial
+        );
+        rightFrame.position.copy(doorObject.position);
+        rightFrame.position.x += width/2 + frameThickness/2;
+        rightFrame.rotation.copy(doorObject.rotation);
+        this.scene.add(rightFrame);
+        details.push(rightFrame);
+        
+        // Door panel material (wood)
+        const panelMaterial = new THREE.MeshStandardMaterial({
+            color: 0x8B4513,  // Brown wood
+            roughness: 0.8,
+            metalness: 0.1
+        });
+        
+        // Add 2x2 grid of raised panels
+        const panelWidth = width * 0.35;
+        const panelHeight = height * 0.35;
+        const panelDepth = 0.05;
+        
+        for (let row = 0; row < 2; row++) {
+            for (let col = 0; col < 2; col++) {
+                const panel = new THREE.Mesh(
+                    new THREE.BoxGeometry(panelWidth, panelHeight, panelDepth),
+                    panelMaterial
+                );
+                panel.position.copy(doorObject.position);
+                panel.position.x += (col - 0.5) * panelWidth * 1.3;
+                panel.position.y += (0.5 - row) * panelHeight * 1.3;
+                panel.position.z += depth/2 + panelDepth/2;
+                panel.rotation.copy(doorObject.rotation);
+                this.scene.add(panel);
+                details.push(panel);
+            }
+        }
+        
+        // Door handle (silver/chrome)
+        const handleMaterial = new THREE.MeshStandardMaterial({
+            color: 0xcccccc,
+            roughness: 0.2,
+            metalness: 0.9
+        });
+        
+        const handle = new THREE.Mesh(
+            new THREE.CylinderGeometry(0.03, 0.03, 0.15, 8),
+            handleMaterial
+        );
+        handle.rotation.z = Math.PI / 2;
+        handle.position.copy(doorObject.position);
+        handle.position.x += width * 0.35;
+        handle.position.z += depth/2 + 0.05;
+        this.scene.add(handle);
+        details.push(handle);
+        
+        // Update door material to wood
+        if (doorObject.material) {
+            const originalMaterial = doorObject.material;
+            doorObject.material = panelMaterial.clone();
+            doorObject.userData.originalMaterial = originalMaterial;
+        }
+        
+        return details;
+    }
+
+    /**
+     * Add roof texture lines (shingles or metal seams)
+     */
+    addRoofDetails(roofObject) {
+        const details = [];
+        
+        // Get roof dimensions
+        const bbox = new THREE.Box3().setFromObject(roofObject);
+        const size = new THREE.Vector3();
+        bbox.getSize(size);
+        
+        // Get roof material type
+        const roofType = roofObject.userData.roofMaterial || 'asphalt-shingle';
+        
+        const lineMaterial = new THREE.LineBasicMaterial({
+            color: 0x000000,
+            linewidth: 1,
+            transparent: true,
+            opacity: 0.6
+        });
+        
+        if (roofType === 'asphalt-shingle' || roofType === 'slate' || roofType === 'clay-tile' || roofType === 'wood-shake') {
+            // Horizontal shingle lines
+            const numLines = Math.floor(size.y / 0.3);
+            
+            for (let i = 1; i < numLines; i++) {
+                const y = bbox.min.y + i * 0.3;
+                const points = [
+                    new THREE.Vector3(bbox.min.x, y, bbox.max.z + 0.05),
+                    new THREE.Vector3(bbox.max.x, y, bbox.max.z + 0.05)
+                ];
+                
+                const geometry = new THREE.BufferGeometry().setFromPoints(points);
+                const line = new THREE.Line(geometry, lineMaterial);
+                this.scene.add(line);
+                details.push(line);
+            }
+        } else if (roofType === 'metal') {
+            // Vertical standing seam lines
+            const numSeams = Math.floor(size.x / 0.6);
+            
+            for (let i = 1; i < numSeams; i++) {
+                const x = bbox.min.x + i * 0.6;
+                const points = [
+                    new THREE.Vector3(x, bbox.min.y, bbox.max.z + 0.05),
+                    new THREE.Vector3(x, bbox.max.y, bbox.max.z + 0.05)
+                ];
+                
+                const geometry = new THREE.BufferGeometry().setFromPoints(points);
+                const line = new THREE.Line(geometry, lineMaterial);
+                this.scene.add(line);
+                details.push(line);
+            }
+        }
+        
+        return details;
+    }
+
+    /**
+     * Add horizontal siding lines to walls
+     */
+    addSidingLines(wallObject) {
+        const details = [];
+        
+        // Get wall dimensions
+        const bbox = new THREE.Box3().setFromObject(wallObject);
+        const size = new THREE.Vector3();
+        bbox.getSize(size);
+        
+        const wallType = wallObject.userData.wallMaterial || '';
+        
+        // Only add lines for siding materials
+        if (wallType === 'vinyl-siding' || wallType === 'wood-siding') {
+            const lineMaterial = new THREE.LineBasicMaterial({
+                color: 0x000000,
+                linewidth: 1,
+                transparent: true,
+                opacity: 0.4
+            });
+            
+            // Horizontal siding lines every 20cm
+            const lineSpacing = 0.2;
+            const numLines = Math.floor(size.y / lineSpacing);
+            
+            for (let i = 1; i < numLines; i++) {
+                const y = bbox.min.y + i * lineSpacing;
+                const points = [
+                    new THREE.Vector3(bbox.min.x, y, bbox.max.z + 0.05),
+                    new THREE.Vector3(bbox.max.x, y, bbox.max.z + 0.05)
+                ];
+                
+                const geometry = new THREE.BufferGeometry().setFromPoints(points);
+                const line = new THREE.Line(geometry, lineMaterial);
+                this.scene.add(line);
+                details.push(line);
+            }
+        }
+        
+        return details;
     }
     
     onWindowResize() {

@@ -398,9 +398,28 @@ async function captureMultipleAngles(threejsGenerator, statusText) {
             // Wait for render completion (200ms minimum for stability)
             await new Promise(resolve => setTimeout(resolve, 200));
             
-            // Capture clean screenshot (without grid)
+            // Capture enhanced screenshot with architectural details for AI generation
             let blob;
-            if (threejsGenerator.captureCleanScreenshot) {
+            if (threejsGenerator.captureEnhancedScreenshotForAI) {
+                const dataURL = await threejsGenerator.captureEnhancedScreenshotForAI(threejsGenerator.camera, angle.name);
+                blob = await new Promise((resolve, reject) => {
+                    try {
+                        // Convert data URL to blob
+                        const byteString = atob(dataURL.split(',')[1]);
+                        const mimeString = dataURL.split(',')[0].split(':')[1].split(';')[0];
+                        const ab = new ArrayBuffer(byteString.length);
+                        const ia = new Uint8Array(ab);
+                        for (let j = 0; j < byteString.length; j++) {
+                            ia[j] = byteString.charCodeAt(j);
+                        }
+                        const blob = new Blob([ab], { type: mimeString });
+                        resolve(blob);
+                    } catch (error) {
+                        reject(error);
+                    }
+                });
+            } else if (threejsGenerator.captureCleanScreenshot) {
+                // Fallback to clean screenshot
                 const dataURL = threejsGenerator.captureCleanScreenshot();
                 blob = await new Promise((resolve, reject) => {
                     try {
@@ -419,7 +438,7 @@ async function captureMultipleAngles(threejsGenerator, statusText) {
                     }
                 });
             } else {
-                // Fallback to canvas capture
+                // Final fallback to canvas capture
                 blob = await new Promise((resolve, reject) => {
                     const canvas = threejsGenerator.renderer.domElement;
                     canvas.toBlob((blob) => {
