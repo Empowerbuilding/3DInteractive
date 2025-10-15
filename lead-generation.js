@@ -576,55 +576,110 @@ async function triggerUpscaleWithLead(leadData, statusText) {
     formData.append('source', 'floor-plan-designer');
     formData.append('device', isMobile ? 'mobile' : 'desktop');
 
-    // Add design data if available
-    const floorPlanApp = window.floorPlanApp || window.mobileApp?.floorPlanEditor;
-    if (floorPlanApp) {
-        const editor = floorPlanApp.floorPlanEditor || floorPlanApp;
-        if (editor && editor.getFloorPlanData) {
-            const floorPlanData = editor.getFloorPlanData();
-            
-            // Calculate building dimensions
-            let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
-            floorPlanData.floors.forEach(floor => {
-                floor.walls.forEach(wall => {
-                    minX = Math.min(minX, wall.startX, wall.endX);
-                    minY = Math.min(minY, wall.startY, wall.endY);
-                    maxX = Math.max(maxX, wall.startX, wall.endX);
-                    maxY = Math.max(maxY, wall.endY, wall.endY);
-                });
-            });
-            
-            const gridSize = floorPlanData.gridSize || 10;
-            const widthFeet = Math.round((maxX - minX) / gridSize);
-            const depthFeet = Math.round((maxY - minY) / gridSize);
-            const totalWindows = floorPlanData.floors.reduce((sum, f) => sum + f.windows.length, 0);
-            const totalDoors = floorPlanData.floors.reduce((sum, f) => sum + f.doors.length, 0);
-            
-            const designData = {
-                structure: {
-                    stories: floorPlanData.floors.length,
-                    width: widthFeet,
-                    depth: depthFeet,
-                    roofStyle: floorPlanData.floors[0]?.roofStyle || 'hip',
-                    wallHeight: floorPlanData.floors[0]?.wallHeight || 8
-                },
-                materials: {
-                    exterior: 'vinyl siding',
-                    roof: 'asphalt shingles'
-                },
-                features: {
-                    windows: totalWindows > 0 ? 'multiple' : 'standard',
-                    garage: 'none',
-                    frontPorch: totalDoors > 0 ? 'covered' : 'none',
-                    backPorch: 'none',
-                    chimney: false
-                },
-                floorPlan: floorPlanData
-            };
-            
-            formData.append('designData', JSON.stringify(designData));
+    // Get design data
+    console.log('🔍 Attempting to get design data...');
+    
+    let designData = null;
+    let usingRealData = false;
+    
+    // Try to get real data from floor plan editor
+    try {
+        // Try desktop app first
+        if (window.floorPlanApp?.floorPlanEditor?.exportFloorplanData) {
+            designData = window.floorPlanApp.floorPlanEditor.exportFloorplanData();
+            usingRealData = true;
+            console.log('✅ Got real design data from desktop floorPlanApp');
         }
+        // Try mobile app
+        else if (window.mobileApp?.floorPlanEditor?.exportFloorplanData) {
+            designData = window.mobileApp.floorPlanEditor.exportFloorplanData();
+            usingRealData = true;
+            console.log('✅ Got real design data from mobile mobileApp');
+        }
+        // Try alternative method
+        else if (window.floorPlanApp?.floorPlanEditor?.getFloorPlanData) {
+            const floorPlanData = window.floorPlanApp.floorPlanEditor.getFloorPlanData();
+            if (floorPlanData && floorPlanData.floors) {
+                // Calculate building dimensions
+                let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+                floorPlanData.floors.forEach(floor => {
+                    if (floor.walls) {
+                        floor.walls.forEach(wall => {
+                            minX = Math.min(minX, wall.startX, wall.endX);
+                            minY = Math.min(minY, wall.startY, wall.endY);
+                            maxX = Math.max(maxX, wall.startX, wall.endX);
+                            maxY = Math.max(maxY, wall.startY, wall.endY);
+                        });
+                    }
+                });
+                
+                const gridSize = floorPlanData.gridSize || 10;
+                const widthFeet = Math.round((maxX - minX) / gridSize);
+                const depthFeet = Math.round((maxY - minY) / gridSize);
+                const totalWindows = floorPlanData.floors.reduce((sum, f) => sum + (f.windows?.length || 0), 0);
+                const totalDoors = floorPlanData.floors.reduce((sum, f) => sum + (f.doors?.length || 0), 0);
+                
+                designData = {
+                    structure: {
+                        stories: floorPlanData.floors.length,
+                        width: widthFeet,
+                        depth: depthFeet,
+                        roofStyle: floorPlanData.floors[0]?.roofStyle || 'hip',
+                        wallHeight: floorPlanData.floors[0]?.wallHeight || 8
+                    },
+                    materials: {
+                        exterior: 'vinyl siding',
+                        roof: 'asphalt shingles'
+                    },
+                    features: {
+                        windows: totalWindows > 0 ? 'multiple' : 'standard',
+                        garage: 'none',
+                        frontPorch: totalDoors > 0 ? 'covered' : 'none',
+                        backPorch: 'none',
+                        chimney: false
+                    },
+                    floorPlan: floorPlanData
+                };
+                usingRealData = true;
+                console.log('✅ Got real design data from getFloorPlanData method');
+            }
+        }
+    } catch (error) {
+        console.warn('⚠️ Error getting real design data:', error);
     }
+    
+    // Fallback to dummy data if not available
+    if (!designData || !designData.structure) {
+        console.warn('⚠️ Could not get real design data, using dummy data for testing');
+        designData = {
+            structure: {
+                stories: 1,
+                width: 40,
+                depth: 30,
+                roofStyle: 'hip',
+                wallHeight: 8
+            },
+            materials: {
+                exterior: 'vinyl siding',
+                roof: 'asphalt shingles'
+            },
+            features: {
+                frontPorch: 'none',
+                garage: 'none',
+                windows: 'standard',
+                backPorch: 'none',
+                chimney: false
+            }
+        };
+        usingRealData = false;
+    }
+    
+    console.log('✅ Design data to send:', designData);
+    console.log('📊 Using real data:', usingRealData);
+    
+    // Add to FormData (CRITICAL: must stringify)
+    formData.append('designData', JSON.stringify(designData));
+    console.log('✅ designData appended to FormData');
 
     // Update status to show generation is starting
     if (statusText) {
