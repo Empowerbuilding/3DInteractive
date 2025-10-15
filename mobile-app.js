@@ -91,8 +91,9 @@ class MobileFloorPlanApp {
         this.setupBottomSheet();
         this.setupSideMenu();
         this.setupBottomSheetObserver();
+        this.setupCanvasInteraction();
         
-        console.log('✅ Mobile app fully initialized with smart undo button');
+        console.log('✅ Mobile app fully initialized with smart undo button and tap-to-edit');
     }
 
     resizeCanvas() {
@@ -168,7 +169,13 @@ class MobileFloorPlanApp {
         document.querySelectorAll('.mobile-tool-btn-wide[data-mode]').forEach(btn => {
             btn.addEventListener('click', () => {
                 const mode = btn.dataset.mode;
-                if (mode && this.floorPlanEditor) {
+                if (mode === 'show-all') {
+                    // Handle show-all mode
+                    this.toggleShowAllMode();
+                    // Visual feedback
+                    document.querySelectorAll('.mobile-tool-btn-wide[data-mode]').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                } else if (mode && this.floorPlanEditor) {
                     this.floorPlanEditor.setMode(mode);
                     // Visual feedback
                     document.querySelectorAll('.mobile-tool-btn-wide[data-mode]').forEach(b => b.classList.remove('active'));
@@ -821,6 +828,522 @@ class MobileFloorPlanApp {
         
         // Store observer so we can disconnect it later if needed
         this.bottomSheetObserver = observer;
+    }
+
+    /**
+     * Setup canvas interaction for tap-to-edit functionality
+     */
+    setupCanvasInteraction() {
+        if (!this.canvas2D) {
+            console.warn('⚠️ 2D canvas not found for tap-to-edit setup');
+            return;
+        }
+
+        console.log('✅ Setting up canvas tap-to-edit interaction');
+
+        // Add click/touch event listeners
+        this.canvas2D.addEventListener('click', (e) => this.handleCanvasClick(e));
+        this.canvas2D.addEventListener('touchend', (e) => {
+            e.preventDefault();
+            const touch = e.changedTouches[0];
+            this.handleCanvasClick(touch);
+        });
+
+        // Initialize selection state
+        this.selectedObject = null;
+        this.showAllMode = false;
+    }
+
+    /**
+     * Handle canvas clicks for direct object selection
+     */
+    handleCanvasClick(event) {
+        const rect = this.canvas2D.getBoundingClientRect();
+        const x = (event.clientX - rect.left) * (this.canvas2D.width / rect.width);
+        const y = (event.clientY - rect.top) * (this.canvas2D.height / rect.height);
+        
+        console.log('Canvas clicked at:', x, y);
+        
+        // Check if we clicked on an existing object
+        const clickedObject = this.findObjectAtPoint(x, y);
+        
+        if (clickedObject) {
+            // User tapped an object - select it!
+            this.selectObject(clickedObject);
+        } else {
+            // Clicked empty space
+            if (this.selectedObject) {
+                // Deselect current object
+                this.deselectObject();
+            } else if (this.floorPlanEditor && this.floorPlanEditor.mode === 'draw') {
+                // Continue drawing walls as normal - let the floor plan editor handle it
+                console.log('Continuing draw mode - delegating to floor plan editor');
+            }
+        }
+    }
+
+    /**
+     * Find which object (wall/door/window) was clicked
+     */
+    findObjectAtPoint(x, y) {
+        if (!this.floorPlanEditor) return null;
+
+        const tolerance = 10; // 10px click tolerance
+        const floorplanData = this.floorPlanEditor.getFloorPlanData();
+        
+        if (!floorplanData || !floorplanData.floors) return null;
+        
+        // Check all floors
+        for (let floorIndex = 0; floorIndex < floorplanData.floors.length; floorIndex++) {
+            const floor = floorplanData.floors[floorIndex];
+            
+            // Check walls
+            if (floor.walls) {
+                for (let wallIndex = 0; wallIndex < floor.walls.length; wallIndex++) {
+                    const wall = floor.walls[wallIndex];
+                    if (this.isPointNearWall(x, y, wall, tolerance)) {
+                        return {
+                            type: 'wall',
+                            floorIndex,
+                            index: wallIndex,
+                            data: wall
+                        };
+                    }
+                }
+            }
+            
+            // Check doors
+            if (floor.doors) {
+                for (let doorIndex = 0; doorIndex < floor.doors.length; doorIndex++) {
+                    const door = floor.doors[doorIndex];
+                    if (this.isPointNearDoor(x, y, door, tolerance)) {
+                        return {
+                            type: 'door',
+                            floorIndex,
+                            index: doorIndex,
+                            data: door
+                        };
+                    }
+                }
+            }
+            
+            // Check windows
+            if (floor.windows) {
+                for (let windowIndex = 0; windowIndex < floor.windows.length; windowIndex++) {
+                    const window = floor.windows[windowIndex];
+                    if (this.isPointNearWindow(x, y, window, tolerance)) {
+                        return {
+                            type: 'window',
+                            floorIndex,
+                            index: windowIndex,
+                            data: window
+                        };
+                    }
+                }
+            }
+        }
+        
+        return null;
+    }
+
+    /**
+     * Check if point is near a wall
+     */
+    isPointNearWall(x, y, wall, tolerance) {
+        const x1 = wall.startX;
+        const y1 = wall.startY;
+        const x2 = wall.endX;
+        const y2 = wall.endY;
+        
+        // Distance from point to line segment
+        const A = x - x1;
+        const B = y - y1;
+        const C = x2 - x1;
+        const D = y2 - y1;
+        
+        const dot = A * C + B * D;
+        const lenSq = C * C + D * D;
+        const param = lenSq !== 0 ? dot / lenSq : -1;
+        
+        let xx, yy;
+        
+        if (param < 0) {
+            xx = x1;
+            yy = y1;
+        } else if (param > 1) {
+            xx = x2;
+            yy = y2;
+        } else {
+            xx = x1 + param * C;
+            yy = y1 + param * D;
+        }
+        
+        const dx = x - xx;
+        const dy = y - yy;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+        
+        return distance <= tolerance;
+    }
+
+    /**
+     * Check if point is near a door
+     */
+    isPointNearDoor(x, y, door, tolerance) {
+        // Doors are positioned along walls, check if point is near the door position
+        const doorWidth = 30; // Match your door rendering width
+        const doorHeight = 10;
+        
+        // Simple bounding box check around door position
+        const minX = door.position - doorWidth/2;
+        const maxX = door.position + doorWidth/2;
+        const minY = door.position - doorHeight/2;
+        const maxY = door.position + doorHeight/2;
+        
+        return x >= minX - tolerance && x <= maxX + tolerance &&
+               y >= minY - tolerance && y <= maxY + tolerance;
+    }
+
+    /**
+     * Check if point is near a window
+     */
+    isPointNearWindow(x, y, window, tolerance) {
+        // Windows are positioned along walls, check if point is near the window position
+        const windowWidth = 20; // Match your window rendering width
+        const windowHeight = 8;
+        
+        const minX = window.position - windowWidth/2;
+        const maxX = window.position + windowWidth/2;
+        const minY = window.position - windowHeight/2;
+        const maxY = window.position + windowHeight/2;
+        
+        return x >= minX - tolerance && x <= maxX + tolerance &&
+               y >= minY - tolerance && y <= maxY + tolerance;
+    }
+
+    /**
+     * Select an object and show edit options
+     */
+    selectObject(object) {
+        console.log('Selected:', object.type, object);
+        
+        // Store selected object
+        this.selectedObject = object;
+        
+        // Show context menu in bottom sheet
+        this.showEditBottomSheet(object);
+        
+        // Request redraw to show selection highlight
+        if (this.floorPlanEditor) {
+            this.floorPlanEditor.render();
+            this.highlightSelectedObject();
+        }
+    }
+
+    /**
+     * Deselect current object
+     */
+    deselectObject() {
+        console.log('Deselected');
+        
+        this.selectedObject = null;
+        
+        // Hide bottom sheet
+        this.hideEditBottomSheet();
+        
+        // Redraw canvas without highlight
+        if (this.floorPlanEditor) {
+            this.floorPlanEditor.render();
+        }
+    }
+
+    /**
+     * Highlight the selected object on canvas
+     */
+    highlightSelectedObject() {
+        if (!this.selectedObject || !this.floorPlanEditor) return;
+        
+        const canvas = this.canvas2D;
+        const ctx = canvas.getContext('2d');
+        const obj = this.selectedObject;
+        
+        ctx.save();
+        
+        // Draw highlight effect
+        ctx.strokeStyle = '#667eea'; // Primary color
+        ctx.lineWidth = 4;
+        ctx.shadowBlur = 10;
+        ctx.shadowColor = '#667eea';
+        
+        if (obj.type === 'wall') {
+            const wall = obj.data;
+            ctx.beginPath();
+            ctx.moveTo(wall.startX, wall.startY);
+            ctx.lineTo(wall.endX, wall.endY);
+            ctx.stroke();
+        } else if (obj.type === 'door') {
+            const door = obj.data;
+            // Draw highlight around door position
+            ctx.strokeRect(door.position - 17, door.position - 7, 34, 14);
+        } else if (obj.type === 'window') {
+            const window = obj.data;
+            // Draw highlight around window position
+            ctx.strokeRect(window.position - 12, window.position - 6, 24, 12);
+        }
+        
+        ctx.restore();
+    }
+
+    /**
+     * Show bottom sheet with edit options for selected object
+     */
+    showEditBottomSheet(object) {
+        const bottomSheet = document.getElementById('mobile-tools-sheet');
+        
+        if (!bottomSheet) {
+            console.warn('⚠️ Bottom sheet not found for context menu');
+            return;
+        }
+        
+        // Create context menu HTML based on object type
+        let menuHTML = `
+            <div class="edit-context-menu">
+                <h3 class="context-menu-title">Edit ${object.type.charAt(0).toUpperCase() + object.type.slice(1)}</h3>
+                <div class="context-menu-actions">
+        `;
+        
+        if (object.type === 'wall') {
+            menuHTML += `
+                <button class="context-btn" data-action="delete-wall">
+                    <span>🗑️</span> Delete Wall
+                </button>
+                <button class="context-btn" data-action="split-wall">
+                    <span>✂️</span> Split Wall
+                </button>
+            `;
+        } else if (object.type === 'door') {
+            menuHTML += `
+                <button class="context-btn" data-action="delete-door">
+                    <span>🗑️</span> Delete Door
+                </button>
+                <button class="context-btn" data-action="move-door">
+                    <span>↔️</span> Move Door
+                </button>
+            `;
+        } else if (object.type === 'window') {
+            menuHTML += `
+                <button class="context-btn" data-action="delete-window">
+                    <span>🗑️</span> Delete Window
+                </button>
+                <button class="context-btn" data-action="move-window">
+                    <span>↔️</span> Move Window
+                </button>
+            `;
+        }
+        
+        menuHTML += `
+                <button class="context-btn context-btn-cancel" data-action="cancel">
+                    <span>✕</span> Cancel
+                </button>
+            </div>
+        </div>
+        `;
+        
+        // Replace bottom sheet content
+        bottomSheet.innerHTML = menuHTML;
+        bottomSheet.classList.add('expanded');
+        
+        // Setup action listeners
+        this.setupContextMenuListeners();
+    }
+
+    /**
+     * Hide the edit bottom sheet
+     */
+    hideEditBottomSheet() {
+        const bottomSheet = document.getElementById('mobile-tools-sheet');
+        
+        if (!bottomSheet) return;
+        
+        bottomSheet.classList.remove('expanded');
+        
+        // TODO: Restore default bottom sheet content (tools)
+        // For now, we'll let the user manually open the tools again
+    }
+
+    /**
+     * Setup listeners for context menu buttons
+     */
+    setupContextMenuListeners() {
+        const buttons = document.querySelectorAll('.context-btn');
+        
+        buttons.forEach(btn => {
+            btn.addEventListener('click', () => {
+                const action = btn.dataset.action;
+                this.handleContextAction(action);
+            });
+        });
+    }
+
+    /**
+     * Handle context menu actions
+     */
+    handleContextAction(action) {
+        if (!this.selectedObject) return;
+        
+        const obj = this.selectedObject;
+        
+        switch(action) {
+            case 'delete-wall':
+                this.deleteWall(obj.floorIndex, obj.index);
+                break;
+            case 'delete-door':
+                this.deleteDoor(obj.floorIndex, obj.index);
+                break;
+            case 'delete-window':
+                this.deleteWindow(obj.floorIndex, obj.index);
+                break;
+            case 'split-wall':
+                this.splitWall(obj.floorIndex, obj.index);
+                break;
+            case 'move-door':
+                this.startMovingDoor(obj);
+                break;
+            case 'move-window':
+                this.startMovingWindow(obj);
+                break;
+            case 'cancel':
+                this.deselectObject();
+                break;
+        }
+        
+        // Deselect after action
+        if (action !== 'cancel') {
+            this.deselectObject();
+        }
+    }
+
+    /**
+     * Delete methods
+     */
+    deleteWall(floorIndex, wallIndex) {
+        if (this.floorPlanEditor) {
+            const floorplanData = this.floorPlanEditor.getFloorPlanData();
+            if (floorplanData && floorplanData.floors[floorIndex]) {
+                floorplanData.floors[floorIndex].walls.splice(wallIndex, 1);
+                this.floorPlanEditor.render();
+                console.log('Wall deleted');
+            }
+        }
+    }
+
+    deleteDoor(floorIndex, doorIndex) {
+        if (this.floorPlanEditor) {
+            const floorplanData = this.floorPlanEditor.getFloorPlanData();
+            if (floorplanData && floorplanData.floors[floorIndex]) {
+                floorplanData.floors[floorIndex].doors.splice(doorIndex, 1);
+                this.floorPlanEditor.render();
+                console.log('Door deleted');
+            }
+        }
+    }
+
+    deleteWindow(floorIndex, windowIndex) {
+        if (this.floorPlanEditor) {
+            const floorplanData = this.floorPlanEditor.getFloorPlanData();
+            if (floorplanData && floorplanData.floors[floorIndex]) {
+                floorplanData.floors[floorIndex].windows.splice(windowIndex, 1);
+                this.floorPlanEditor.render();
+                console.log('Window deleted');
+            }
+        }
+    }
+
+    /**
+     * Placeholder methods for future enhancements
+     */
+    splitWall(floorIndex, wallIndex) {
+        console.log('Split wall functionality - to be implemented');
+        // TODO: Implement wall splitting
+    }
+
+    startMovingDoor(object) {
+        console.log('Move door functionality - to be implemented');
+        // TODO: Implement door moving
+    }
+
+    startMovingWindow(object) {
+        console.log('Move window functionality - to be implemented');
+        // TODO: Implement window moving
+    }
+
+    /**
+     * Toggle show-all mode to highlight all editable objects
+     */
+    toggleShowAllMode() {
+        this.showAllMode = !this.showAllMode;
+        
+        if (this.showAllMode) {
+            // Highlight all editable elements
+            this.highlightAllObjects();
+        } else {
+            // Remove highlights
+            if (this.floorPlanEditor) {
+                this.floorPlanEditor.render();
+                // Re-highlight selected object if any
+                if (this.selectedObject) {
+                    this.highlightSelectedObject();
+                }
+            }
+        }
+        
+        console.log('Show all mode:', this.showAllMode ? 'ON' : 'OFF');
+    }
+
+    /**
+     * Highlight all editable objects on the canvas
+     */
+    highlightAllObjects() {
+        if (!this.floorPlanEditor) return;
+        
+        const canvas = this.canvas2D;
+        const ctx = canvas.getContext('2d');
+        const floorplanData = this.floorPlanEditor.getFloorPlanData();
+        
+        if (!floorplanData || !floorplanData.floors) return;
+        
+        // Draw semi-transparent highlights on all objects
+        ctx.save();
+        ctx.globalAlpha = 0.3;
+        ctx.strokeStyle = '#667eea';
+        ctx.lineWidth = 3;
+        
+        floorplanData.floors.forEach(floor => {
+            // Highlight walls
+            if (floor.walls) {
+                floor.walls.forEach(wall => {
+                    ctx.beginPath();
+                    ctx.moveTo(wall.startX, wall.startY);
+                    ctx.lineTo(wall.endX, wall.endY);
+                    ctx.stroke();
+                });
+            }
+            
+            // Highlight doors
+            if (floor.doors) {
+                floor.doors.forEach(door => {
+                    ctx.strokeRect(door.position - 15, door.position - 5, 30, 10);
+                });
+            }
+            
+            // Highlight windows
+            if (floor.windows) {
+                floor.windows.forEach(window => {
+                    ctx.strokeRect(window.position - 10, window.position - 4, 20, 8);
+                });
+            }
+        });
+        
+        ctx.restore();
     }
 }
 
