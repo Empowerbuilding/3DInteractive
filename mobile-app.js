@@ -190,6 +190,13 @@ class MobileFloorPlanApp {
             }
         });
 
+        // Mobile Quick Undo Button (floating button)
+        document.getElementById('mobile-quick-undo')?.addEventListener('click', () => {
+            if (this.floorPlanEditor) {
+                this.floorPlanEditor.undo();
+            }
+        });
+
         // Floor Management
         document.getElementById('mobile-add-floor')?.addEventListener('click', () => {
             if (this.floorPlanEditor) {
