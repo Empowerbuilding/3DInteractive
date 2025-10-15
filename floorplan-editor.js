@@ -82,8 +82,8 @@ export class FloorPlanEditor {
         // Mobile-specific grid settings
         this.isMobile = window.innerWidth < 1025;
         if (this.isMobile) {
-            this.gridSize = 15; // Larger pixels per foot for mobile
-            // Each grid square on mobile = 4 feet (60 pixels = 15px/ft * 4ft)
+            this.gridSize = 10; // Same pixel density as desktop but with 4-foot squares
+            // Each grid square on mobile = 4 feet (40 pixels = 10px/ft * 4ft)
         }
         
         // Visual settings
@@ -119,7 +119,7 @@ export class FloorPlanEditor {
         
         // Update grid size if mobile state changed
         if (this.isMobile !== wasMobile) {
-            this.gridSize = this.isMobile ? 15 : 10;
+            this.gridSize = this.isMobile ? 10 : 10; // Same pixel density for both
             console.log(`Grid size updated: ${this.isMobile ? 'Mobile' : 'Desktop'} mode (${this.gridSize}px/ft)`);
         }
         
@@ -200,9 +200,9 @@ export class FloorPlanEditor {
         
         // Snap to grid if enabled
         // Desktop: Grid spacing is 20 pixels (2 feet per square at 10px/ft)
-        // Mobile: Grid spacing is 60 pixels (4 feet per square at 15px/ft)
+        // Mobile: Grid spacing is 40 pixels (4 feet per square at 10px/ft)
         if (this.snapToGrid && !this.shiftKeyPressed) {
-            const gridSpacing = this.isMobile ? 60 : 20; // pixels per grid square
+            const gridSpacing = this.isMobile ? 40 : 20; // pixels per grid square
             x = Math.round(x / gridSpacing) * gridSpacing;
             y = Math.round(y / gridSpacing) * gridSpacing;
         }
@@ -1464,8 +1464,8 @@ export class FloorPlanEditor {
         
         // Grid spacing based on device type:
         // Desktop: 20 pixels = 2 feet per square (10px/ft)
-        // Mobile: 60 pixels = 4 feet per square (15px/ft)
-        const gridSpacing = this.isMobile ? 60 : 20;
+        // Mobile: 40 pixels = 4 feet per square (10px/ft)
+        const gridSpacing = this.isMobile ? 40 : 20;
         
         // Vertical lines
         for (let x = 0; x < w; x += gridSpacing) {
