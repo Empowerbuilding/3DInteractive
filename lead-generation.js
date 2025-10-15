@@ -267,34 +267,98 @@ window.handleLeadSubmit = async function handleLeadSubmit() {
 };
 
 /**
- * Capture multiple camera angles of the 3D building model
+ * Capture multiple camera angles of the 3D building model from consistent ground-level positions
  * @param {Object} threejsGenerator - The Three.js generator instance
  * @param {Object} statusText - Status text element for user feedback
  * @returns {Array} Array of {name, blob} objects for each angle captured
  */
 async function captureMultipleAngles(threejsGenerator, statusText) {
-    console.log('📸 Starting multi-angle capture...');
+    console.log('📸 Starting multi-angle capture with consistent ground-level angles...');
     
     // Store original camera position and target
     const originalCameraPosition = threejsGenerator.camera.position.clone();
     const originalTarget = threejsGenerator.controls.target.clone();
     
-    // Define 3 camera angles with names
+    // Calculate building dimensions and center
+    let minX = Infinity, maxX = -Infinity;
+    let minZ = Infinity, maxZ = -Infinity;
+    let maxY = -Infinity;
+    let buildingObjectCount = 0;
+    
+    // Loop through scene to find building objects
+    threejsGenerator.scene.children.forEach(child => {
+        if (child.userData.isBuilding && child.geometry) {
+            buildingObjectCount++;
+            
+            // Compute bounding box if not already computed
+            if (!child.geometry.boundingBox) {
+                child.geometry.computeBoundingBox();
+            }
+            
+            if (child.geometry.boundingBox) {
+                const bbox = child.geometry.boundingBox;
+                const pos = child.position;
+                
+                minX = Math.min(minX, pos.x + bbox.min.x);
+                maxX = Math.max(maxX, pos.x + bbox.max.x);
+                minZ = Math.min(minZ, pos.z + bbox.min.z);
+                maxZ = Math.max(maxZ, pos.z + bbox.max.z);
+                maxY = Math.max(maxY, pos.y + bbox.max.y);
+            }
+        }
+    });
+    
+    // Check if we found any building objects
+    if (buildingObjectCount === 0 || minX === Infinity) {
+        throw new Error('No building objects found in scene for camera angle calculation');
+    }
+    
+    // Calculate building center and dimensions
+    const buildingCenterX = (minX + maxX) / 2;
+    const buildingCenterZ = (minZ + maxZ) / 2;
+    const buildingWidth = maxX - minX;
+    const buildingDepth = maxZ - minZ;
+    const buildingHeight = maxY;
+    
+    console.log('🏢 Building dimensions calculated:', {
+        center: { x: buildingCenterX, z: buildingCenterZ },
+        size: { width: buildingWidth.toFixed(2), depth: buildingDepth.toFixed(2), height: buildingHeight.toFixed(2) },
+        objects: buildingObjectCount
+    });
+    
+    // Calculate consistent camera settings
+    const cameraDistance = Math.max(buildingWidth, buildingDepth) * 1.5; // ADJUSTABLE: Higher = farther
+    const eyeLevelHeight = buildingHeight * 0.3; // ADJUSTABLE: Lower = more ground-level
+    const lookAtHeight = buildingHeight * 0.4; // ADJUSTABLE: Where camera aims vertically
+    
+    console.log('📐 Camera settings calculated:', {
+        distance: cameraDistance.toFixed(2),
+        eyeLevel: eyeLevelHeight.toFixed(2),
+        lookAt: lookAtHeight.toFixed(2)
+    });
+    
+    // Define 3 camera positions using polar coordinates
     const cameraAngles = [
         {
-            name: 'front-right-corner',
-            position: { x: 30, y: 15, z: 30 },
-            lookAt: { x: 0, y: 5, z: 0 }
+            name: 'front-angle',
+            angle: Math.PI / 4, // 45 degrees
+            x: buildingCenterX + cameraDistance * Math.cos(Math.PI / 4),
+            y: eyeLevelHeight,
+            z: buildingCenterZ + cameraDistance * Math.sin(Math.PI / 4)
         },
         {
             name: 'side-view',
-            position: { x: -35, y: 12, z: 5 },
-            lookAt: { x: 0, y: 5, z: 0 }
+            angle: Math.PI / 2, // 90 degrees to the left
+            x: buildingCenterX - cameraDistance,
+            y: eyeLevelHeight,
+            z: buildingCenterZ
         },
         {
-            name: 'opposite-corner',
-            position: { x: 25, y: 20, z: -25 },
-            lookAt: { x: 0, y: 5, z: 0 }
+            name: 'corner-view',
+            angle: 5 * Math.PI / 4, // 225 degrees (opposite of front)
+            x: buildingCenterX + cameraDistance * Math.cos(5 * Math.PI / 4),
+            y: eyeLevelHeight,
+            z: buildingCenterZ + cameraDistance * Math.sin(5 * Math.PI / 4)
         }
     ];
     
@@ -303,7 +367,7 @@ async function captureMultipleAngles(threejsGenerator, statusText) {
     
     // Update status for user feedback
     if (statusText) {
-        statusText.textContent = '📸 Capturing 3 angles...';
+        statusText.textContent = '📸 Capturing 3 ground-level angles...';
     }
     
     // Loop through each camera angle
@@ -311,35 +375,23 @@ async function captureMultipleAngles(threejsGenerator, statusText) {
         const angle = cameraAngles[i];
         
         try {
-            console.log(`📸 Capturing angle ${i + 1}/3: ${angle.name}`);
+            console.log(`📸 Capturing angle ${i + 1}/3: ${angle.name} at position (${angle.x.toFixed(2)}, ${angle.y.toFixed(2)}, ${angle.z.toFixed(2)})`);
             
-            // Move camera to this angle
-            threejsGenerator.camera.position.set(
-                angle.position.x,
-                angle.position.y,
-                angle.position.z
-            );
+            // Set camera position
+            threejsGenerator.camera.position.set(angle.x, angle.y, angle.z);
             
-            // Look at the target point
-            threejsGenerator.camera.lookAt(
-                angle.lookAt.x,
-                angle.lookAt.y,
-                angle.lookAt.z
-            );
+            // Look at the building center at calculated height
+            threejsGenerator.camera.lookAt(buildingCenterX, lookAtHeight, buildingCenterZ);
             
             // Update controls to match
-            threejsGenerator.controls.target.set(
-                angle.lookAt.x,
-                angle.lookAt.y,
-                angle.lookAt.z
-            );
+            threejsGenerator.controls.target.set(buildingCenterX, lookAtHeight, buildingCenterZ);
             threejsGenerator.controls.update();
             
             // Force a render with new camera position
             threejsGenerator.renderer.render(threejsGenerator.scene, threejsGenerator.camera);
             
-            // Small delay to ensure render completes
-            await new Promise(resolve => setTimeout(resolve, 100));
+            // Wait for render completion (200ms minimum for stability)
+            await new Promise(resolve => setTimeout(resolve, 200));
             
             // Capture clean screenshot (without grid)
             let blob;
@@ -393,7 +445,7 @@ async function captureMultipleAngles(threejsGenerator, statusText) {
     threejsGenerator.controls.update();
     threejsGenerator.renderer.render(threejsGenerator.scene, threejsGenerator.camera);
     
-    console.log(`✅ Multi-angle capture complete: ${successfulCaptures}/${cameraAngles.length} angles captured successfully`);
+    console.log(`✅ Multi-angle capture complete: ${successfulCaptures}/${cameraAngles.length} ground-level angles captured successfully`);
     
     return capturedAngles;
 }
