@@ -17,23 +17,27 @@ export class ThreeJSGenerator {
         this.renderer = null;
         this.controls = null;
         
-        // 3D Settings
+        // 3D Settings - Enhanced for high-contrast AI detection
         this.wallHeight = 8; // feet
-        this.wallThickness = 0.33; // feet (4 inches)
+        this.wallThickness = 0.5; // feet (6 inches) - Increased thickness for better visibility
         this.showRoof = true;
         this.roofStyle = 'hip'; // 'hip', 'gable', or 'flat'
         this.roofPitch = 6; // pitch ratio (6:12 means 6" rise per 12" run)
-        this.roofOverhang = 1; // feet
+        this.roofOverhang = 2; // feet - Increased for more prominent overhang
         
-        // Materials
+        // Materials - Enhanced for high-contrast architectural features
         this.materials = {
             wall: null,
             floor: null,
             ceiling: null,
             door: null,
             window: null,
+            windowFrame: null,
+            doorFrame: null,
             roof: null,
-            patio: null
+            patio: null,
+            trim: null,
+            foundation: null
         };
         
         this.init();
@@ -52,16 +56,17 @@ export class ThreeJSGenerator {
         this.camera = new THREE.PerspectiveCamera(60, aspect, 0.1, 1000);
         this.camera.position.set(30, 30, 30);
         
-        // Renderer
+        // Renderer - Enhanced for high-contrast architectural features
         this.renderer = new THREE.WebGLRenderer({ 
             canvas: this.canvas, 
-            antialias: true,
+            antialias: false, // Disable anti-aliasing for sharp edges
             preserveDrawingBuffer: true // Required for canvas.toBlob() screenshots
         });
         this.renderer.setSize(this.canvas.clientWidth, this.canvas.clientHeight);
         this.renderer.setPixelRatio(window.devicePixelRatio);
         this.renderer.shadowMap.enabled = true;
-        this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        this.renderer.shadowMap.type = THREE.PCFHardShadowMap; // Harder shadows for definition
+        this.renderer.outputColorSpace = THREE.SRGBColorSpace; // Better color accuracy
         
         // Controls
         this.controls = new OrbitControls(this.camera, this.renderer.domElement);
@@ -124,42 +129,80 @@ export class ThreeJSGenerator {
     }
     
     initMaterials() {
+        // Enhanced materials for high-contrast AI detection
         this.materials.wall = new THREE.MeshStandardMaterial({ 
-            color: 0xe8dcc4,
-            roughness: 0.7 
+            color: 0xf0f0f0, // Brighter, more neutral wall color
+            roughness: 0.8,
+            metalness: 0.0
         });
         
         this.materials.floor = new THREE.MeshStandardMaterial({ 
-            color: 0xd4a574,
-            roughness: 0.8 
+            color: 0xe0e0e0, // Lighter floor for contrast
+            roughness: 0.9,
+            metalness: 0.0
         });
         
         this.materials.ceiling = new THREE.MeshStandardMaterial({ 
-            color: 0xf5f5f5,
-            roughness: 0.9 
+            color: 0xffffff, // Pure white ceiling
+            roughness: 0.9,
+            metalness: 0.0
         });
         
+        // Bold, dark door for maximum contrast
         this.materials.door = new THREE.MeshStandardMaterial({ 
-            color: 0x8b4513,
-            roughness: 0.5 
+            color: 0x2a2a2a, // Very dark brown/black
+            roughness: 0.3,
+            metalness: 0.1
         });
         
+        // Pure black window glass for maximum contrast
         this.materials.window = new THREE.MeshStandardMaterial({ 
-            color: 0x87ceeb,
-            transparent: true,
-            opacity: 0.3,
+            color: 0x000000, // Pure black glass
+            transparent: false, // Remove transparency for solid appearance
+            opacity: 1.0,
             roughness: 0.1,
-            metalness: 0.5
+            metalness: 0.8
         });
         
+        // Bold window frame material
+        this.materials.windowFrame = new THREE.MeshStandardMaterial({ 
+            color: 0x444444, // Dark gray frame
+            roughness: 0.2,
+            metalness: 0.3
+        });
+        
+        // Bold door frame material
+        this.materials.doorFrame = new THREE.MeshStandardMaterial({ 
+            color: 0x333333, // Dark frame
+            roughness: 0.2,
+            metalness: 0.2
+        });
+        
+        // High contrast roof
         this.materials.roof = new THREE.MeshStandardMaterial({ 
-            color: 0x8b4513,
-            roughness: 0.9 
+            color: 0x1a1a1a, // Very dark roof
+            roughness: 0.9,
+            metalness: 0.0
         });
         
         this.materials.patio = new THREE.MeshStandardMaterial({ 
-            color: 0xa0826d,
-            roughness: 0.8 
+            color: 0x888888, // Neutral gray patio
+            roughness: 0.9,
+            metalness: 0.0
+        });
+        
+        // Bold trim material for architectural details
+        this.materials.trim = new THREE.MeshStandardMaterial({ 
+            color: 0x555555, // Dark gray trim
+            roughness: 0.3,
+            metalness: 0.2
+        });
+        
+        // High-contrast foundation
+        this.materials.foundation = new THREE.MeshStandardMaterial({ 
+            color: 0x666666, // Medium gray foundation
+            roughness: 0.9,
+            metalness: 0.0
         });
     }
     
@@ -332,24 +375,57 @@ export class ThreeJSGenerator {
                     );
                 }
                 
-                // Create door mesh
-                const doorGeometry = new THREE.BoxGeometry(
-                    opening.width,
-                    opening.height,
-                    this.wallThickness * feetToMeters * 0.5
-                );
-                const doorMesh = new THREE.Mesh(doorGeometry, this.materials.door);
+                // Enhanced door with bold frame and trim
                 const doorPosX = startX + dx * opening.pos;
                 const doorPosZ = startZ + dz * opening.pos;
-                doorMesh.position.set(
+                
+                // Door frame (thick, bold frame)
+                const frameThickness = 0.1; // 10cm thick frame
+                const frameGeometry = new THREE.BoxGeometry(
+                    opening.width + frameThickness * 2,
+                    opening.height + frameThickness * 2,
+                    this.wallThickness * feetToMeters + 0.05
+                );
+                const frameMesh = new THREE.Mesh(frameGeometry, this.materials.doorFrame);
+                frameMesh.position.set(
                     doorPosX,
                     yOffset + opening.height / 2,
                     doorPosZ
+                );
+                frameMesh.rotation.y = angle;
+                frameMesh.castShadow = true;
+                frameMesh.userData.isBuilding = true;
+                this.scene.add(frameMesh);
+                
+                // Door panel (dark, inset from frame)
+                const doorGeometry = new THREE.BoxGeometry(
+                    opening.width,
+                    opening.height,
+                    this.wallThickness * feetToMeters * 0.3
+                );
+                const doorMesh = new THREE.Mesh(doorGeometry, this.materials.door);
+                doorMesh.position.set(
+                    doorPosX,
+                    yOffset + opening.height / 2,
+                    doorPosZ + (this.wallThickness * feetToMeters * 0.1) // Slightly inset
                 );
                 doorMesh.rotation.y = angle;
                 doorMesh.castShadow = true;
                 doorMesh.userData.isBuilding = true;
                 this.scene.add(doorMesh);
+                
+                // Door handle/hardware (small dark rectangle)
+                const handleGeometry = new THREE.BoxGeometry(0.08, 0.15, 0.02);
+                const handleMesh = new THREE.Mesh(handleGeometry, this.materials.doorFrame);
+                handleMesh.position.set(
+                    doorPosX + opening.width * 0.3,
+                    yOffset + opening.height * 0.5,
+                    doorPosZ + (this.wallThickness * feetToMeters * 0.2) + 0.01
+                );
+                handleMesh.rotation.y = angle;
+                handleMesh.castShadow = true;
+                handleMesh.userData.isBuilding = true;
+                this.scene.add(handleMesh);
             } else if (opening.type === 'window') {
                 // Wall above window
                 const aboveLength = (openingEnd - openingStart) * length;
@@ -379,23 +455,60 @@ export class ThreeJSGenerator {
                     angle
                 );
                 
-                // Window glass
-                const windowGeometry = new THREE.BoxGeometry(
-                    opening.width,
-                    opening.height,
-                    this.wallThickness * feetToMeters * 0.3
-                );
-                const windowMesh = new THREE.Mesh(windowGeometry, this.materials.window);
+                // Enhanced window with bold frame and glass
                 const windowPosX = startX + dx * opening.pos;
                 const windowPosZ = startZ + dz * opening.pos;
-                windowMesh.position.set(
+                
+                // Window frame (thick, bold frame)
+                const frameThickness = 0.15; // 15cm thick frame
+                const frameGeometry = new THREE.BoxGeometry(
+                    opening.width + frameThickness * 2,
+                    opening.height + frameThickness * 2,
+                    this.wallThickness * feetToMeters + 0.1
+                );
+                const frameMesh = new THREE.Mesh(frameGeometry, this.materials.windowFrame);
+                frameMesh.position.set(
                     windowPosX,
                     yOffset + opening.bottomOffset + opening.height / 2,
                     windowPosZ
                 );
+                frameMesh.rotation.y = angle;
+                frameMesh.castShadow = true;
+                frameMesh.userData.isBuilding = true;
+                this.scene.add(frameMesh);
+                
+                // Window glass (pure black, inset from frame)
+                const glassGeometry = new THREE.BoxGeometry(
+                    opening.width,
+                    opening.height,
+                    this.wallThickness * feetToMeters * 0.2
+                );
+                const windowMesh = new THREE.Mesh(glassGeometry, this.materials.window);
+                windowMesh.position.set(
+                    windowPosX,
+                    yOffset + opening.bottomOffset + opening.height / 2,
+                    windowPosZ + (this.wallThickness * feetToMeters * 0.1) // Slightly inset
+                );
                 windowMesh.rotation.y = angle;
                 windowMesh.userData.isBuilding = true;
                 this.scene.add(windowMesh);
+                
+                // Window sill (horizontal ledge)
+                const sillGeometry = new THREE.BoxGeometry(
+                    opening.width + frameThickness * 2,
+                    0.05, // 5cm thick sill
+                    this.wallThickness * feetToMeters + 0.2
+                );
+                const sillMesh = new THREE.Mesh(sillGeometry, this.materials.windowFrame);
+                sillMesh.position.set(
+                    windowPosX,
+                    yOffset + opening.bottomOffset - 0.025,
+                    windowPosZ + (this.wallThickness * feetToMeters * 0.1)
+                );
+                sillMesh.rotation.y = angle;
+                sillMesh.castShadow = true;
+                sillMesh.userData.isBuilding = true;
+                this.scene.add(sillMesh);
             }
             
             lastPos = openingEnd;
