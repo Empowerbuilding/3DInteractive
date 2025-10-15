@@ -90,8 +90,9 @@ class MobileFloorPlanApp {
         this.setupEventListeners();
         this.setupBottomSheet();
         this.setupSideMenu();
+        this.setupBottomSheetObserver();
         
-        console.log('✅ Mobile app fully initialized');
+        console.log('✅ Mobile app fully initialized with smart undo button');
     }
 
     resizeCanvas() {
@@ -180,13 +181,6 @@ class MobileFloorPlanApp {
         document.getElementById('mobile-clear-plan')?.addEventListener('click', () => {
             if (confirm('Clear entire floor plan?')) {
                 this.floorPlanEditor.clear();
-            }
-        });
-
-        // Undo
-        document.getElementById('mobile-undo')?.addEventListener('click', () => {
-            if (this.floorPlanEditor) {
-                this.floorPlanEditor.undo();
             }
         });
 
@@ -774,6 +768,59 @@ class MobileFloorPlanApp {
         const overlay = document.getElementById('mobile-overlay');
         menu?.classList.add('open');
         overlay?.classList.add('visible');
+    }
+
+    /**
+     * Setup observer to hide/show undo button when bottom sheet opens/closes
+     */
+    setupBottomSheetObserver() {
+        // Find the bottom sheet element
+        const bottomSheet = document.getElementById('mobile-tools-sheet');
+        const undoBtn = document.querySelector('.quick-undo-btn');
+        
+        if (!bottomSheet) {
+            console.warn('⚠️ Bottom sheet not found for undo button observer');
+            return;
+        }
+        
+        if (!undoBtn) {
+            console.warn('⚠️ Undo button not found for visibility control');
+            return;
+        }
+        
+        console.log('✅ Setting up bottom sheet observer for undo button');
+        
+        // Use MutationObserver to watch for class changes
+        const observer = new MutationObserver((mutations) => {
+            mutations.forEach((mutation) => {
+                if (mutation.attributeName === 'class') {
+                    const isOpen = bottomSheet.classList.contains('expanded');
+                    
+                    console.log('Bottom sheet state changed:', isOpen ? 'OPEN' : 'CLOSED');
+                    
+                    if (isOpen) {
+                        // Bottom sheet is open - hide undo button
+                        undoBtn.style.opacity = '0';
+                        undoBtn.style.pointerEvents = 'none';
+                        undoBtn.style.transform = 'translateY(20px)';
+                    } else {
+                        // Bottom sheet is closed - show undo button
+                        undoBtn.style.opacity = '1';
+                        undoBtn.style.pointerEvents = 'auto';
+                        undoBtn.style.transform = 'translateY(0)';
+                    }
+                }
+            });
+        });
+        
+        // Start observing the bottom sheet for class changes
+        observer.observe(bottomSheet, { 
+            attributes: true,
+            attributeFilter: ['class']
+        });
+        
+        // Store observer so we can disconnect it later if needed
+        this.bottomSheetObserver = observer;
     }
 }
 

@@ -853,20 +853,74 @@ button {
     }
 }
 
-.side-menu-nav {
-    padding: 12px 16px; /* Tighter container padding */
-}
+/* ==================== MENU SPACING & ALIGNMENT FIXES ==================== */
 
+/* Better vertical alignment and tighter spacing */
 .menu-item {
-    gap: 12px; /* Reduced from 14px */
-    padding: 14px 16px; /* Reduced from 14px 18px */
-    margin-bottom: 6px; /* Increased from 4px for better separation */
-    font-size: 15px; /* Reduced from 16px */
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px; /* Reduced vertical padding */
+    border: none;
+    background: transparent;
+    color: var(--text-primary);
+    font-size: 15px;
+    font-weight: 500;
+    text-align: left;
+    border-radius: 12px;
+    cursor: pointer;
+    margin-bottom: 4px; /* Reduced gap between items */
+    transition: all 0.2s;
+    line-height: 1; /* Tighter line height */
+    min-height: 44px; /* Maintain touch target */
 }
 
 .menu-item span:first-child {
-    font-size: 20px; /* Reduced from 22px */
-    width: 24px; /* Reduced from 28px */
+    font-size: 20px;
+    width: 24px;
+    height: 24px; /* Explicit height for centering */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    line-height: 1;
+}
+
+.menu-item:active {
+    background: var(--background);
+    transform: scale(0.98);
+}
+
+/* Tighter menu container */
+.side-menu-nav {
+    padding: 8px 16px; /* Reduced top/bottom padding */
+    flex: 1;
+}
+
+/* ==================== SMART UNDO BUTTON VISIBILITY ==================== */
+
+/* Base state: Undo button visible with smooth transitions */
+.quick-undo-btn {
+    opacity: 1;
+    pointer-events: auto;
+    transform: translateY(0);
+    transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+                transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Hide undo button when bottom sheet is open */
+.mobile-bottom-sheet.open ~ .mobile-canvas-container .quick-undo-btn,
+.mobile-tools-panel.open ~ .mobile-canvas-container .quick-undo-btn,
+.bottom-sheet-open .quick-undo-btn {
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(20px); /* Slide down slightly as it fades */
+}
+
+/* Ensure button can't be clicked when hidden */
+.quick-undo-btn[style*="opacity: 0"] {
+    pointer-events: none;
 }
 
 /* ==================== ADDITIONAL RESPONSIVE ==================== */
@@ -1546,11 +1600,12 @@ button {
     transform: translateX(0);
 }
 
+/* Compact header */
 .side-menu-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 16px 20px;
+    padding: 14px 16px; /* Reduced padding */
     border-bottom: none;
     background: linear-gradient(135deg, var(--primary-color) 0%, #764ba2 100%);
     color: white;
@@ -1558,19 +1613,20 @@ button {
 }
 
 .side-menu-header h2 {
-    font-size: 20px;
+    font-size: 18px; /* Smaller title */
     margin: 0;
     color: white;
+    font-weight: 600;
 }
 
 .side-menu-close {
-    width: 40px; /* Larger touch target */
-    height: 40px;
+    width: 36px; /* Smaller close button */
+    height: 36px;
     border: none;
     background: rgba(255, 255, 255, 0.2);
     color: white;
-    font-size: 22px;
-    border-radius: 10px;
+    font-size: 20px;
+    border-radius: 8px;
     cursor: pointer;
     display: flex;
     align-items: center;
@@ -1584,42 +1640,7 @@ button {
     transform: scale(0.95);
 }
 
-.side-menu-nav {
-    padding: 8px 12px; /* Reduce top/bottom padding */
-    flex: 1;
-}
 
-.menu-item {
-    width: 100%;
-    display: flex;
-    align-items: center;
-    gap: 14px; /* Slightly larger gap between icon and text */
-    padding: 14px 18px; /* More horizontal padding */
-    border: none;
-    background: transparent;
-    color: var(--text-primary);
-    font-size: 16px;
-    font-weight: 500;
-    text-align: left;
-    border-radius: 12px; /* More rounded */
-    cursor: pointer;
-    margin-bottom: 4px; /* Tighter spacing */
-    transition: all 0.2s;
-}
-
-.menu-item span:first-child {
-    font-size: 22px; /* Slightly larger icons */
-    width: 28px; /* Fixed width for alignment */
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-}
-
-.menu-item:active {
-    background: var(--background);
-    transform: scale(0.98); /* Subtle press effect */
-}
 
 /* ==================== OVERLAY ==================== */
 .mobile-overlay {
