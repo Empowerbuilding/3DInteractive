@@ -309,6 +309,10 @@ export class ThreeJSGenerator {
         mesh.userData.isBuilding = true;
         mesh.userData.isWall = true;
         mesh.userData.wallMaterial = 'vinyl-siding';
+        
+        // Apply siding texture enhancement for depth
+        this.enhanceWallWithSiding(mesh, 'vinyl-siding');
+        
         this.scene.add(mesh);
     }
     
@@ -377,7 +381,7 @@ export class ThreeJSGenerator {
                     );
                 }
                 
-                // Enhanced door with bold frame and trim
+                // Simple visible door (temporary fix)
                 const doorPosX = startX + dx * opening.pos;
                 const doorPosZ = startZ + dz * opening.pos;
                 
@@ -416,19 +420,6 @@ export class ThreeJSGenerator {
                 doorMesh.userData.isBuilding = true;
                 doorMesh.userData.isDoor = true;
                 this.scene.add(doorMesh);
-                
-                // Door handle/hardware (small dark rectangle)
-                const handleGeometry = new THREE.BoxGeometry(0.08, 0.15, 0.02);
-                const handleMesh = new THREE.Mesh(handleGeometry, this.materials.doorFrame);
-                handleMesh.position.set(
-                    doorPosX + opening.width * 0.3,
-                    yOffset + opening.height * 0.5,
-                    doorPosZ + (this.wallThickness * feetToMeters * 0.2) + 0.01
-                );
-                handleMesh.rotation.y = angle;
-                handleMesh.castShadow = true;
-                handleMesh.userData.isBuilding = true;
-                this.scene.add(handleMesh);
             } else if (opening.type === 'window') {
                 // Wall above window
                 const aboveLength = (openingEnd - openingStart) * length;
@@ -458,7 +449,7 @@ export class ThreeJSGenerator {
                     angle
                 );
                 
-                // Enhanced window with bold frame and glass
+                // Simple visible window (temporary fix)
                 const windowPosX = startX + dx * opening.pos;
                 const windowPosZ = startZ + dz * opening.pos;
                 
@@ -496,23 +487,6 @@ export class ThreeJSGenerator {
                 windowMesh.userData.isBuilding = true;
                 windowMesh.userData.isWindow = true;
                 this.scene.add(windowMesh);
-                
-                // Window sill (horizontal ledge)
-                const sillGeometry = new THREE.BoxGeometry(
-                    opening.width + frameThickness * 2,
-                    0.05, // 5cm thick sill
-                    this.wallThickness * feetToMeters + 0.2
-                );
-                const sillMesh = new THREE.Mesh(sillGeometry, this.materials.windowFrame);
-                sillMesh.position.set(
-                    windowPosX,
-                    yOffset + opening.bottomOffset - 0.025,
-                    windowPosZ + (this.wallThickness * feetToMeters * 0.1)
-                );
-                sillMesh.rotation.y = angle;
-                sillMesh.castShadow = true;
-                sillMesh.userData.isBuilding = true;
-                this.scene.add(sillMesh);
             }
             
             lastPos = openingEnd;
@@ -873,6 +847,10 @@ export class ThreeJSGenerator {
             roofMesh.userData.isBuilding = true;
             roofMesh.userData.isRoof = true;
             roofMesh.userData.roofMaterial = 'asphalt-shingle';
+            
+            // Apply texture enhancement for depth
+            this.enhanceRoofWithTexture(roofMesh, 'asphalt-shingle');
+            
             this.scene.add(roofMesh);
         }
     }
@@ -1052,6 +1030,10 @@ export class ThreeJSGenerator {
             roofMesh.userData.isBuilding = true;
             roofMesh.userData.isRoof = true;
             roofMesh.userData.roofMaterial = 'asphalt-shingle';
+            
+            // Apply texture enhancement for depth
+            this.enhanceRoofWithTexture(roofMesh, 'asphalt-shingle');
+            
             this.scene.add(roofMesh);
         }
     }
@@ -1159,6 +1141,9 @@ export class ThreeJSGenerator {
             gableMesh.userData.isBuilding = true;
             gableMesh.userData.isWall = true;
             gableMesh.userData.wallMaterial = 'vinyl-siding';
+            
+            // Apply siding texture enhancement for depth
+            this.enhanceWallWithSiding(gableMesh, 'vinyl-siding');
             
             this.scene.add(gableMesh);
         });
@@ -1297,6 +1282,10 @@ export class ThreeJSGenerator {
             roofMesh.userData.isBuilding = true;
             roofMesh.userData.isRoof = true;
             roofMesh.userData.roofMaterial = 'asphalt-shingle';
+            
+            // Apply texture enhancement for depth
+            this.enhanceRoofWithTexture(roofMesh, 'asphalt-shingle');
+            
             this.scene.add(roofMesh);
         }
     }
@@ -1403,6 +1392,9 @@ export class ThreeJSGenerator {
             gableMesh.userData.isBuilding = true;
             gableMesh.userData.isWall = true;
             gableMesh.userData.wallMaterial = 'vinyl-siding';
+            
+            // Apply siding texture enhancement for depth
+            this.enhanceWallWithSiding(gableMesh, 'vinyl-siding');
             
             this.scene.add(gableMesh);
         });
@@ -1917,6 +1909,419 @@ export class ThreeJSGenerator {
         }
         
         return details;
+    }
+
+    /**
+     * Create a realistic window with depth (recess + frame + glass)
+     * @param {number} width - Window width
+     * @param {number} height - Window height
+     * @param {THREE.Vector3} position - Position on wall
+     * @param {THREE.Vector3} wallNormal - Wall normal direction
+     * @returns {THREE.Group} - Complete window assembly
+     */
+    createRealisticWindow(width, height, position, wallNormal) {
+        const windowGroup = new THREE.Group();
+        windowGroup.userData.isBuilding = true;
+        windowGroup.userData.isWindow = true;
+        
+        // CONSTANTS
+        const frameThickness = 0.08;  // 8cm frame
+        const frameDepth = 0.12;       // 12cm frame depth
+        const glassDepth = 0.03;       // 3cm glass thickness
+        const recessDepth = 0.15;      // 15cm window recess into wall
+        
+        // 1. WINDOW RECESS (hole in wall - dark interior)
+        const recessGeometry = new THREE.BoxGeometry(
+            width + 0.02,
+            height + 0.02,
+            recessDepth
+        );
+        const recessMaterial = new THREE.MeshStandardMaterial({
+            color: 0x1a1a1a,  // Very dark (interior)
+            roughness: 0.9
+        });
+        const recess = new THREE.Mesh(recessGeometry, recessMaterial);
+        recess.position.copy(position);
+        // Move into wall along normal
+        recess.position.addScaledVector(wallNormal, -recessDepth / 2);
+        windowGroup.add(recess);
+        
+        // 2. OUTER WINDOW FRAME (protruding from wall)
+        const frameMaterial = new THREE.MeshStandardMaterial({
+            color: 0x2c2c2c,  // Dark gray/black trim
+            roughness: 0.7,
+            metalness: 0.1
+        });
+        
+        // Top frame piece
+        const topFrameGeo = new THREE.BoxGeometry(
+            width + frameThickness * 2,
+            frameThickness,
+            frameDepth
+        );
+        const topFrame = new THREE.Mesh(topFrameGeo, frameMaterial);
+        topFrame.position.copy(position);
+        topFrame.position.y += height / 2 + frameThickness / 2;
+        topFrame.position.addScaledVector(wallNormal, frameDepth / 2);
+        windowGroup.add(topFrame);
+        
+        // Bottom frame piece
+        const bottomFrame = new THREE.Mesh(topFrameGeo, frameMaterial);
+        bottomFrame.position.copy(position);
+        bottomFrame.position.y -= height / 2 + frameThickness / 2;
+        bottomFrame.position.addScaledVector(wallNormal, frameDepth / 2);
+        windowGroup.add(bottomFrame);
+        
+        // Left frame piece
+        const sideFrameGeo = new THREE.BoxGeometry(
+            frameThickness,
+            height + frameThickness * 2,
+            frameDepth
+        );
+        const leftFrame = new THREE.Mesh(sideFrameGeo, frameMaterial);
+        leftFrame.position.copy(position);
+        leftFrame.position.x -= width / 2 + frameThickness / 2;
+        leftFrame.position.addScaledVector(wallNormal, frameDepth / 2);
+        windowGroup.add(leftFrame);
+        
+        // Right frame piece
+        const rightFrame = new THREE.Mesh(sideFrameGeo, frameMaterial);
+        rightFrame.position.copy(position);
+        rightFrame.position.x += width / 2 + frameThickness / 2;
+        rightFrame.position.addScaledVector(wallNormal, frameDepth / 2);
+        windowGroup.add(rightFrame);
+        
+        // 3. GLASS PANES (4 panes with mullions)
+        const glassMaterial = new THREE.MeshPhysicalMaterial({
+            color: 0x88ccff,
+            transparent: true,
+            opacity: 0.3,
+            roughness: 0.1,
+            metalness: 0.1,
+            transmission: 0.9,
+            thickness: 0.01
+        });
+        
+        const paneWidth = (width - 0.04) / 2;  // Subtract mullion width
+        const paneHeight = (height - 0.04) / 2;
+        
+        // Create 4 glass panes (2x2 grid)
+        for (let row = 0; row < 2; row++) {
+            for (let col = 0; col < 2; col++) {
+                const paneGeo = new THREE.BoxGeometry(paneWidth, paneHeight, glassDepth);
+                const pane = new THREE.Mesh(paneGeo, glassMaterial);
+                pane.position.copy(position);
+                pane.position.x += (col - 0.5) * (paneWidth + 0.04);
+                pane.position.y += (0.5 - row) * (paneHeight + 0.04);
+                pane.position.addScaledVector(wallNormal, glassDepth / 2);
+                windowGroup.add(pane);
+            }
+        }
+        
+        // 4. WINDOW MULLIONS (dividers between panes)
+        const mullionMaterial = new THREE.MeshStandardMaterial({
+            color: 0x404040,
+            roughness: 0.6
+        });
+        
+        // Vertical mullion (center)
+        const vMullionGeo = new THREE.BoxGeometry(0.04, height, frameDepth);
+        const vMullion = new THREE.Mesh(vMullionGeo, mullionMaterial);
+        vMullion.position.copy(position);
+        vMullion.position.addScaledVector(wallNormal, frameDepth / 2);
+        windowGroup.add(vMullion);
+        
+        // Horizontal mullion (center)
+        const hMullionGeo = new THREE.BoxGeometry(width, 0.04, frameDepth);
+        const hMullion = new THREE.Mesh(hMullionGeo, mullionMaterial);
+        hMullion.position.copy(position);
+        hMullion.position.addScaledVector(wallNormal, frameDepth / 2);
+        windowGroup.add(hMullion);
+        
+        return windowGroup;
+    }
+
+    /**
+     * Create a realistic door with depth (recess + frame + panels + handle)
+     * @param {number} width - Door width
+     * @param {number} height - Door height
+     * @param {THREE.Vector3} position - Position on wall
+     * @param {THREE.Vector3} wallNormal - Wall normal direction
+     * @returns {THREE.Group} - Complete door assembly
+     */
+    createRealisticDoor(width, height, position, wallNormal) {
+        const doorGroup = new THREE.Group();
+        doorGroup.userData.isBuilding = true;
+        doorGroup.userData.isDoor = true;
+        
+        // CONSTANTS
+        const frameThickness = 0.1;   // 10cm frame
+        const frameDepth = 0.15;      // 15cm frame depth
+        const doorThickness = 0.05;   // 5cm door thickness
+        const recessDepth = 0.2;      // 20cm door recess
+        const panelDepth = 0.03;      // 3cm raised panel depth
+        
+        // 1. DOOR RECESS (opening in wall)
+        const recessGeometry = new THREE.BoxGeometry(
+            width + 0.02,
+            height + 0.02,
+            recessDepth
+        );
+        const recessMaterial = new THREE.MeshStandardMaterial({
+            color: 0x0a0a0a,  // Very dark interior
+            roughness: 0.95
+        });
+        const recess = new THREE.Mesh(recessGeometry, recessMaterial);
+        recess.position.copy(position);
+        recess.position.addScaledVector(wallNormal, -recessDepth / 2);
+        doorGroup.add(recess);
+        
+        // 2. DOOR FRAME (white trim)
+        const frameMaterial = new THREE.MeshStandardMaterial({
+            color: 0xf5f5f5,  // Off-white
+            roughness: 0.6
+        });
+        
+        // Top frame (header)
+        const topFrameGeo = new THREE.BoxGeometry(
+            width + frameThickness * 2,
+            frameThickness,
+            frameDepth
+        );
+        const topFrame = new THREE.Mesh(topFrameGeo, frameMaterial);
+        topFrame.position.copy(position);
+        topFrame.position.y += height / 2 + frameThickness / 2;
+        topFrame.position.addScaledVector(wallNormal, frameDepth / 2);
+        doorGroup.add(topFrame);
+        
+        // Left frame (jamb)
+        const sideFrameGeo = new THREE.BoxGeometry(
+            frameThickness,
+            height + frameThickness,
+            frameDepth
+        );
+        const leftFrame = new THREE.Mesh(sideFrameGeo, frameMaterial);
+        leftFrame.position.copy(position);
+        leftFrame.position.x -= width / 2 + frameThickness / 2;
+        leftFrame.position.addScaledVector(wallNormal, frameDepth / 2);
+        doorGroup.add(leftFrame);
+        
+        // Right frame (jamb)
+        const rightFrame = new THREE.Mesh(sideFrameGeo, frameMaterial);
+        rightFrame.position.copy(position);
+        rightFrame.position.x += width / 2 + frameThickness / 2;
+        rightFrame.position.addScaledVector(wallNormal, frameDepth / 2);
+        doorGroup.add(rightFrame);
+        
+        // 3. DOOR SLAB (main door surface)
+        const doorMaterial = new THREE.MeshStandardMaterial({
+            color: 0x8B4513,  // Brown wood
+            roughness: 0.8,
+            metalness: 0.1
+        });
+        
+        const doorSlabGeo = new THREE.BoxGeometry(width, height, doorThickness);
+        const doorSlab = new THREE.Mesh(doorSlabGeo, doorMaterial);
+        doorSlab.position.copy(position);
+        doorSlab.position.addScaledVector(wallNormal, doorThickness / 2 - 0.05);
+        doorGroup.add(doorSlab);
+        
+        // 4. RAISED PANELS (2x2 grid on door face)
+        const panelMaterial = new THREE.MeshStandardMaterial({
+            color: 0x7a3c0f,  // Darker brown for contrast
+            roughness: 0.85,
+            metalness: 0.05
+        });
+        
+        const panelWidth = width * 0.35;
+        const panelHeight = height * 0.35;
+        
+        for (let row = 0; row < 2; row++) {
+            for (let col = 0; col < 2; col++) {
+                const panelGeo = new THREE.BoxGeometry(
+                    panelWidth,
+                    panelHeight,
+                    panelDepth
+                );
+                const panel = new THREE.Mesh(panelGeo, panelMaterial);
+                panel.position.copy(position);
+                panel.position.x += (col - 0.5) * panelWidth * 1.3;
+                panel.position.y += (0.5 - row) * panelHeight * 1.3;
+                panel.position.addScaledVector(wallNormal, doorThickness / 2 + panelDepth / 2);
+                doorGroup.add(panel);
+            }
+        }
+        
+        // 5. DOOR HANDLE (brushed metal)
+        const handleMaterial = new THREE.MeshStandardMaterial({
+            color: 0xc0c0c0,  // Silver
+            roughness: 0.3,
+            metalness: 0.9
+        });
+        
+        // Handle cylinder
+        const handleGeo = new THREE.CylinderGeometry(0.025, 0.025, 0.12, 12);
+        const handle = new THREE.Mesh(handleGeo, handleMaterial);
+        handle.rotation.z = Math.PI / 2;
+        handle.position.copy(position);
+        handle.position.x += width * 0.3;  // Right side
+        handle.position.y -= height * 0.05;  // Slightly below center
+        handle.position.addScaledVector(wallNormal, doorThickness / 2 + 0.04);
+        doorGroup.add(handle);
+        
+        // Handle backplate
+        const backplateGeo = new THREE.CylinderGeometry(0.04, 0.04, 0.02, 16);
+        const backplate = new THREE.Mesh(backplateGeo, handleMaterial);
+        backplate.rotation.x = Math.PI / 2;
+        backplate.position.copy(handle.position);
+        backplate.position.addScaledVector(wallNormal, -0.01);
+        doorGroup.add(backplate);
+        
+        return doorGroup;
+    }
+
+    /**
+     * Add displacement/bump mapping to roof for texture depth
+     * @param {THREE.Mesh} roofMesh - The roof mesh to enhance
+     * @param {string} roofType - Type of roof material
+     */
+    enhanceRoofWithTexture(roofMesh, roofType) {
+        // Create canvas for procedural texture
+        const canvas = document.createElement('canvas');
+        canvas.width = 512;
+        canvas.height = 512;
+        const ctx = canvas.getContext('2d');
+        
+        if (roofType === 'asphalt-shingle' || roofType === 'slate') {
+            // Draw horizontal shingle pattern
+            ctx.fillStyle = '#2c2c2c';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            ctx.strokeStyle = '#000000';
+            ctx.lineWidth = 2;
+            
+            // Horizontal lines for shingles
+            const lineSpacing = canvas.height / 15;
+            for (let i = 0; i < 15; i++) {
+                ctx.beginPath();
+                ctx.moveTo(0, i * lineSpacing);
+                ctx.lineTo(canvas.width, i * lineSpacing);
+                ctx.stroke();
+            }
+            
+        } else if (roofType === 'metal') {
+            // Draw vertical standing seam pattern
+            ctx.fillStyle = '#4a4a4a';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            ctx.strokeStyle = '#000000';
+            ctx.lineWidth = 3;
+            
+            // Vertical seam lines
+            const seamSpacing = canvas.width / 8;
+            for (let i = 0; i < 8; i++) {
+                ctx.beginPath();
+                ctx.moveTo(i * seamSpacing, 0);
+                ctx.lineTo(i * seamSpacing, canvas.height);
+                ctx.stroke();
+                
+                // Raised seam
+                ctx.strokeStyle = '#666666';
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                ctx.moveTo(i * seamSpacing + 2, 0);
+                ctx.lineTo(i * seamSpacing + 2, canvas.height);
+                ctx.stroke();
+                ctx.strokeStyle = '#000000';
+                ctx.lineWidth = 3;
+            }
+        }
+        
+        // Create texture from canvas
+        const texture = new THREE.CanvasTexture(canvas);
+        texture.wrapS = THREE.RepeatWrapping;
+        texture.wrapT = THREE.RepeatWrapping;
+        texture.repeat.set(4, 4);
+        
+        // Create bump map (same pattern but lighter)
+        const bumpCanvas = document.createElement('canvas');
+        bumpCanvas.width = 512;
+        bumpCanvas.height = 512;
+        const bumpCtx = bumpCanvas.getContext('2d');
+        bumpCtx.drawImage(canvas, 0, 0);
+        
+        const bumpTexture = new THREE.CanvasTexture(bumpCanvas);
+        bumpTexture.wrapS = THREE.RepeatWrapping;
+        bumpTexture.wrapT = THREE.RepeatWrapping;
+        bumpTexture.repeat.set(4, 4);
+        
+        // Apply to material
+        if (roofMesh.material) {
+            roofMesh.material.map = texture;
+            roofMesh.material.bumpMap = bumpTexture;
+            roofMesh.material.bumpScale = 0.05;  // Subtle depth
+            roofMesh.material.needsUpdate = true;
+        }
+    }
+
+    /**
+     * Add siding texture with depth to walls
+     * @param {THREE.Mesh} wallMesh - The wall mesh to enhance
+     * @param {string} wallType - Type of wall material
+     */
+    enhanceWallWithSiding(wallMesh, wallType) {
+        if (wallType !== 'vinyl-siding' && wallType !== 'wood-siding') {
+            return;  // Only for siding materials
+        }
+        
+        // Create canvas for siding texture
+        const canvas = document.createElement('canvas');
+        canvas.width = 256;
+        canvas.height = 512;
+        const ctx = canvas.getContext('2d');
+        
+        // Base color
+        ctx.fillStyle = '#d4d4d4';  // Light gray
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        
+        // Horizontal siding lines
+        ctx.strokeStyle = '#000000';
+        ctx.lineWidth = 2;
+        
+        const sidingSpacing = canvas.height / 25;  // 25 rows
+        for (let i = 0; i < 25; i++) {
+            ctx.beginPath();
+            ctx.moveTo(0, i * sidingSpacing);
+            ctx.lineTo(canvas.width, i * sidingSpacing);
+            ctx.stroke();
+            
+            // Shadow line below each plank
+            ctx.strokeStyle = '#999999';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(0, i * sidingSpacing + 1);
+            ctx.lineTo(canvas.width, i * sidingSpacing + 1);
+            ctx.stroke();
+            ctx.strokeStyle = '#000000';
+            ctx.lineWidth = 2;
+        }
+        
+        // Create texture
+        const texture = new THREE.CanvasTexture(canvas);
+        texture.wrapS = THREE.RepeatWrapping;
+        texture.wrapT = THREE.RepeatWrapping;
+        texture.repeat.set(2, 1);
+        
+        // Create bump map
+        const bumpTexture = texture.clone();
+        
+        // Apply to material
+        if (wallMesh.material) {
+            wallMesh.material.map = texture;
+            wallMesh.material.bumpMap = bumpTexture;
+            wallMesh.material.bumpScale = 0.02;  // Subtle depth
+            wallMesh.material.needsUpdate = true;
+        }
     }
     
     onWindowResize() {
