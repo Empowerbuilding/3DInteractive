@@ -909,13 +909,14 @@ button {
                 transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* Hide undo button when bottom sheet is open */
+/* Hide undo button when bottom sheet is open/expanded */
+.bottom-sheet.expanded ~ .mobile-canvas-container .quick-undo-btn,
 .mobile-bottom-sheet.open ~ .mobile-canvas-container .quick-undo-btn,
 .mobile-tools-panel.open ~ .mobile-canvas-container .quick-undo-btn,
 .bottom-sheet-open .quick-undo-btn {
-    opacity: 0;
-    pointer-events: none;
-    transform: translateY(20px); /* Slide down slightly as it fades */
+    opacity: 0 !important;
+    pointer-events: none !important;
+    transform: translateY(20px) !important;
 }
 
 /* Ensure button can't be clicked when hidden */
