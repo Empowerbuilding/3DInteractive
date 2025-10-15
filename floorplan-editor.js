@@ -74,10 +74,17 @@ export class FloorPlanEditor {
         this.isDraggingDoorWindow = false;
         
         // Grid settings
-        this.gridSize = 10; // pixels per foot (each grid square = 2 feet)
+        this.gridSize = 10; // pixels per foot (each grid square = 2 feet on desktop)
         this.showGrid = true;
         this.snapToGrid = true;
         this.snapDistance = 15; // pixels - snap to endpoints within this distance
+
+        // Mobile-specific grid settings
+        this.isMobile = window.innerWidth < 1025;
+        if (this.isMobile) {
+            this.gridSize = 15; // Larger pixels per foot for mobile
+            // Each grid square on mobile = 4 feet (60 pixels = 15px/ft * 4ft)
+        }
         
         // Visual settings
         this.colors = {
@@ -105,6 +112,16 @@ export class FloorPlanEditor {
     
     resizeCanvas() {
         const container = this.canvas.parentElement;
+        
+        // Update mobile detection and grid size on resize
+        const wasMobile = this.isMobile;
+        this.isMobile = window.innerWidth < 1025;
+        
+        // Update grid size if mobile state changed
+        if (this.isMobile !== wasMobile) {
+            this.gridSize = this.isMobile ? 15 : 10;
+            console.log(`Grid size updated: ${this.isMobile ? 'Mobile' : 'Desktop'} mode (${this.gridSize}px/ft)`);
+        }
         
         // Check if we're in mobile mode
         const isMobile = container && container.classList.contains('mobile-canvas-container');
@@ -182,9 +199,10 @@ export class FloorPlanEditor {
         let y = e.clientY - rect.top;
         
         // Snap to grid if enabled
-        // Grid spacing is 20 pixels (2 feet per square)
+        // Desktop: Grid spacing is 20 pixels (2 feet per square at 10px/ft)
+        // Mobile: Grid spacing is 60 pixels (4 feet per square at 15px/ft)
         if (this.snapToGrid && !this.shiftKeyPressed) {
-            const gridSpacing = 20; // pixels per grid square
+            const gridSpacing = this.isMobile ? 60 : 20; // pixels per grid square
             x = Math.round(x / gridSpacing) * gridSpacing;
             y = Math.round(y / gridSpacing) * gridSpacing;
         }
@@ -1444,9 +1462,10 @@ export class FloorPlanEditor {
         ctx.strokeStyle = this.colors.grid;
         ctx.lineWidth = 1;
         
-        // Grid spacing: 20 pixels = 2 feet
-        // Each grid square represents 2 feet
-        const gridSpacing = 20; // visual spacing in pixels
+        // Grid spacing based on device type:
+        // Desktop: 20 pixels = 2 feet per square (10px/ft)
+        // Mobile: 60 pixels = 4 feet per square (15px/ft)
+        const gridSpacing = this.isMobile ? 60 : 20;
         
         // Vertical lines
         for (let x = 0; x < w; x += gridSpacing) {
