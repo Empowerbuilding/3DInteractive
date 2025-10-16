@@ -128,12 +128,77 @@ export class ThreeJSGenerator {
         console.log('✅ Three.js Scene Initialized');
     }
     
+    createSidingTexture() {
+        const canvas = document.createElement('canvas');
+        canvas.width = 256;
+        canvas.height = 512;
+        const ctx = canvas.getContext('2d');
+        
+        // Base color - match wall color
+        ctx.fillStyle = '#7f7f7f';  // Dark gray
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        
+        // Horizontal siding lines
+        ctx.strokeStyle = '#6a6a6a';
+        ctx.lineWidth = 2;
+        const lineSpacing = 20;
+        
+        for (let y = 0; y < canvas.height; y += lineSpacing) {
+            ctx.beginPath();
+            ctx.moveTo(0, y);
+            ctx.lineTo(canvas.width, y);
+            ctx.stroke();
+        }
+        
+        const texture = new THREE.CanvasTexture(canvas);
+        texture.wrapS = THREE.RepeatWrapping;
+        texture.wrapT = THREE.RepeatWrapping;
+        texture.repeat.set(2, 2);
+        
+        return texture;
+    }
+
+    createSidingBumpMap() {
+        const canvas = document.createElement('canvas');
+        canvas.width = 256;
+        canvas.height = 512;
+        const ctx = canvas.getContext('2d');
+        
+        ctx.fillStyle = '#808080';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        
+        ctx.strokeStyle = '#606060';
+        ctx.lineWidth = 3;
+        const lineSpacing = 20;
+        
+        for (let y = 0; y < canvas.height; y += lineSpacing) {
+            ctx.beginPath();
+            ctx.moveTo(0, y);
+            ctx.lineTo(canvas.width, y);
+            ctx.stroke();
+        }
+        
+        const texture = new THREE.CanvasTexture(canvas);
+        texture.wrapS = THREE.RepeatWrapping;
+        texture.wrapT = THREE.RepeatWrapping;
+        texture.repeat.set(2, 2);
+        
+        return texture;
+    }
+    
     initMaterials() {
+        // Create shared textures ONCE
+        const sidingTexture = this.createSidingTexture();
+        const sidingBumpMap = this.createSidingBumpMap();
+        
         // Enhanced materials for high-contrast AI detection
         this.materials.wall = new THREE.MeshStandardMaterial({ 
-            color: 0xf0f0f0, // Brighter, more neutral wall color
+            color: 0x7f7f7f, // Dark gray - match shared texture
             roughness: 0.8,
-            metalness: 0.0
+            metalness: 0.2,
+            map: sidingTexture,         // Shared texture
+            bumpMap: sidingBumpMap,     // Shared bump map
+            bumpScale: 0.02
         });
         
         this.materials.floor = new THREE.MeshStandardMaterial({ 
@@ -148,32 +213,29 @@ export class ThreeJSGenerator {
             metalness: 0.0
         });
         
-        // Bold, dark door for maximum contrast
         this.materials.door = new THREE.MeshStandardMaterial({ 
-            color: 0x2a2a2a, // Very dark brown/black
-            roughness: 0.3,
+            color: 0x8B4513, // BROWN WOOD COLOR (SaddleBrown)
+            roughness: 0.7,
             metalness: 0.1
         });
         
-        // Pure black window glass for maximum contrast
         this.materials.window = new THREE.MeshStandardMaterial({ 
-            color: 0x000000, // Pure black glass
-            transparent: false, // Remove transparency for solid appearance
-            opacity: 1.0,
-            roughness: 0.1,
-            metalness: 0.8
+            color: 0xFFFFFF, // WHITE glass - CRITICAL CHANGE
+            roughness: 0.3,
+            metalness: 0.0,
+            emissive: 0xE0E0E0,  // Bright emissive glow
+            emissiveIntensity: 0.5
         });
         
-        // Bold window frame material
         this.materials.windowFrame = new THREE.MeshStandardMaterial({ 
-            color: 0x444444, // Dark gray frame
-            roughness: 0.2,
-            metalness: 0.3
+            color: 0x000000, // BLACK frame - CRITICAL CHANGE
+            roughness: 0.5,
+            metalness: 0.1
         });
         
         // Bold door frame material
         this.materials.doorFrame = new THREE.MeshStandardMaterial({ 
-            color: 0x333333, // Dark frame
+            color: 0x7f7f7f, // Match wall color exactly
             roughness: 0.2,
             metalness: 0.2
         });
@@ -309,9 +371,6 @@ export class ThreeJSGenerator {
         mesh.userData.isBuilding = true;
         mesh.userData.isWall = true;
         mesh.userData.wallMaterial = 'vinyl-siding';
-        
-        // Apply siding texture enhancement for depth
-        this.enhanceWallWithSiding(mesh, 'vinyl-siding');
         
         this.scene.add(mesh);
     }
@@ -471,7 +530,7 @@ export class ThreeJSGenerator {
                 frameMesh.userData.isBuilding = true;
                 this.scene.add(frameMesh);
                 
-                // Window glass (pure black, inset from frame)
+                // Window glass (bright white, inset from frame)
                 const glassGeometry = new THREE.BoxGeometry(
                     opening.width,
                     opening.height,
@@ -487,6 +546,36 @@ export class ThreeJSGenerator {
                 windowMesh.userData.isBuilding = true;
                 windowMesh.userData.isWindow = true;
                 this.scene.add(windowMesh);
+                
+                // Add black mullions (window dividers) for extra contrast
+                const mullionMaterial = new THREE.MeshStandardMaterial({
+                    color: 0x000000,  // Black mullions
+                    roughness: 0.4
+                });
+
+                // Vertical mullion (center)
+                const vMullionGeo = new THREE.BoxGeometry(0.03, opening.height, this.wallThickness * feetToMeters * 0.3);
+                const vMullion = new THREE.Mesh(vMullionGeo, mullionMaterial);
+                vMullion.position.set(
+                    windowPosX,
+                    yOffset + opening.bottomOffset + opening.height / 2,
+                    windowPosZ + (this.wallThickness * feetToMeters * 0.1)
+                );
+                vMullion.rotation.y = angle;
+                vMullion.userData.isBuilding = true;
+                this.scene.add(vMullion);
+
+                // Horizontal mullion (center)
+                const hMullionGeo = new THREE.BoxGeometry(opening.width, 0.03, this.wallThickness * feetToMeters * 0.3);
+                const hMullion = new THREE.Mesh(hMullionGeo, mullionMaterial);
+                hMullion.position.set(
+                    windowPosX,
+                    yOffset + opening.bottomOffset + opening.height / 2,
+                    windowPosZ + (this.wallThickness * feetToMeters * 0.1)
+                );
+                hMullion.rotation.y = angle;
+                hMullion.userData.isBuilding = true;
+                this.scene.add(hMullion);
             }
             
             lastPos = openingEnd;
@@ -1142,9 +1231,6 @@ export class ThreeJSGenerator {
             gableMesh.userData.isWall = true;
             gableMesh.userData.wallMaterial = 'vinyl-siding';
             
-            // Apply siding texture enhancement for depth
-            this.enhanceWallWithSiding(gableMesh, 'vinyl-siding');
-            
             this.scene.add(gableMesh);
         });
     }
@@ -1392,9 +1478,6 @@ export class ThreeJSGenerator {
             gableMesh.userData.isBuilding = true;
             gableMesh.userData.isWall = true;
             gableMesh.userData.wallMaterial = 'vinyl-siding';
-            
-            // Apply siding texture enhancement for depth
-            this.enhanceWallWithSiding(gableMesh, 'vinyl-siding');
             
             this.scene.add(gableMesh);
         });
@@ -1948,7 +2031,7 @@ export class ThreeJSGenerator {
         
         // 2. OUTER WINDOW FRAME (protruding from wall)
         const frameMaterial = new THREE.MeshStandardMaterial({
-            color: 0x2c2c2c,  // Dark gray/black trim
+            color: 0x7f7f7f,  // Match wall color exactly
             roughness: 0.7,
             metalness: 0.1
         });
@@ -2076,9 +2159,9 @@ export class ThreeJSGenerator {
         recess.position.addScaledVector(wallNormal, -recessDepth / 2);
         doorGroup.add(recess);
         
-        // 2. DOOR FRAME (white trim)
+        // 2. DOOR FRAME (match wall color)
         const frameMaterial = new THREE.MeshStandardMaterial({
-            color: 0xf5f5f5,  // Off-white
+            color: 0x7f7f7f,  // Match wall color exactly
             roughness: 0.6
         });
         
