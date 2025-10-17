@@ -544,6 +544,9 @@ class MobileFloorPlanApp {
         const openMenu = () => {
             menu?.classList.add('open');
             overlay?.classList.add('visible');
+            
+            // Update area stats when menu opens
+            this.updateMobileAreaStats();
         };
 
         const closeMenu = () => {
@@ -768,6 +771,149 @@ class MobileFloorPlanApp {
         const overlay = document.getElementById('mobile-overlay');
         menu?.classList.add('open');
         overlay?.classList.add('visible');
+        
+        // Update area stats when menu opens
+        this.updateMobileAreaStats();
+    }
+
+    /**
+     * Update area statistics in mobile side menu
+     */
+    updateMobileAreaStats() {
+        try {
+            // Get area data from the area integration system
+            let areaData = null;
+            
+            // Try to get current area data from the global area integration
+            if (window.updateComprehensiveMeasurements) {
+                areaData = window.updateComprehensiveMeasurements();
+            }
+            
+            // If no data available, try to calculate it
+            if (!areaData && this.floorPlanEditor) {
+                const floorplanData = this.floorPlanEditor.getFloorPlanData();
+                if (floorplanData && floorplanData.floors && floorplanData.floors.length > 0) {
+                    // Use the area calculator directly
+                    if (window.AreaCalculator) {
+                        const calculator = new window.AreaCalculator(20);
+                        areaData = calculator.calculateAllAreas(floorplanData);
+                    }
+                }
+            }
+            
+            // Update the area stats section in the side menu
+            this.displayMobileAreaStats(areaData);
+            
+        } catch (error) {
+            console.error('❌ Error updating mobile area stats:', error);
+            this.displayMobileAreaStats(null);
+        }
+    }
+
+    /**
+     * Display area statistics in mobile side menu
+     * @param {Object|null} areaData - Area calculation results
+     */
+    displayMobileAreaStats(areaData) {
+        const menu = document.getElementById('mobile-side-menu');
+        if (!menu) return;
+        
+        // Find or create area stats section
+        let statsSection = menu.querySelector('.mobile-area-stats');
+        
+        if (!statsSection) {
+            // Create the area stats section
+            statsSection = document.createElement('div');
+            statsSection.className = 'mobile-area-stats';
+            
+            // Insert after the header, before the navigation
+            const nav = menu.querySelector('.side-menu-nav');
+            if (nav) {
+                menu.insertBefore(statsSection, nav);
+            } else {
+                menu.appendChild(statsSection);
+            }
+        }
+        
+        if (!areaData || !areaData.totals) {
+            // No data available
+            statsSection.innerHTML = `
+                <div style="padding: 16px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; margin: 0 0 16px 0; border-radius: 0;">
+                    <h3 style="margin: 0 0 12px 0; font-size: 16px; font-weight: 600; display: flex; align-items: center; gap: 8px;">
+                        📐 Area Calculations
+                    </h3>
+                    <p style="margin: 0; font-size: 14px; opacity: 0.8;">
+                        Draw some walls to see area calculations
+                    </p>
+                </div>
+            `;
+            return;
+        }
+        
+        const totals = areaData.totals;
+        
+        // Display area statistics with inline styles for mobile
+        statsSection.innerHTML = `
+            <div style="padding: 16px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; margin: 0 0 16px 0; border-radius: 0;">
+                <h3 style="margin: 0 0 16px 0; font-size: 16px; font-weight: 600; display: flex; align-items: center; gap: 8px;">
+                    📐 Area Calculations
+                </h3>
+                
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                    <!-- Living Space -->
+                    <div style="background: rgba(255, 255, 255, 0.15); backdrop-filter: blur(10px); border-radius: 8px; padding: 12px; text-align: center;">
+                        <div style="font-size: 12px; opacity: 0.9; margin-bottom: 4px;">Living Space</div>
+                        <div style="font-size: 18px; font-weight: 700;">${totals.totalLivingSpace.toLocaleString()}</div>
+                        <div style="font-size: 10px; opacity: 0.8;">sq ft</div>
+                    </div>
+                    
+                    <!-- Total Walls -->
+                    <div style="background: rgba(255, 255, 255, 0.15); backdrop-filter: blur(10px); border-radius: 8px; padding: 12px; text-align: center;">
+                        <div style="font-size: 12px; opacity: 0.9; margin-bottom: 4px;">Total Walls</div>
+                        <div style="font-size: 18px; font-weight: 700;">${totals.wallArea.toLocaleString()}</div>
+                        <div style="font-size: 10px; opacity: 0.8;">sq ft</div>
+                    </div>
+                    
+                    <!-- Total Roof -->
+                    <div style="background: rgba(255, 255, 255, 0.15); backdrop-filter: blur(10px); border-radius: 8px; padding: 12px; text-align: center;">
+                        <div style="font-size: 12px; opacity: 0.9; margin-bottom: 4px;">Total Roof</div>
+                        <div style="font-size: 18px; font-weight: 700;">${totals.roofArea.toLocaleString()}</div>
+                        <div style="font-size: 10px; opacity: 0.8;">sq ft</div>
+                    </div>
+                    
+                    <!-- Patios -->
+                    <div style="background: rgba(255, 255, 255, 0.15); backdrop-filter: blur(10px); border-radius: 8px; padding: 12px; text-align: center;">
+                        <div style="font-size: 12px; opacity: 0.9; margin-bottom: 4px;">Patios</div>
+                        <div style="font-size: 18px; font-weight: 700;">${totals.patioArea.toLocaleString()}</div>
+                        <div style="font-size: 10px; opacity: 0.8;">sq ft</div>
+                    </div>
+                </div>
+                
+                <!-- Detailed breakdown button -->
+                <button id="mobile-show-detailed-areas" style="width: 100%; margin-top: 12px; padding: 10px; background: rgba(255, 255, 255, 0.2); color: white; border: 2px solid white; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s ease;">
+                    📊 View Detailed Breakdown
+                </button>
+            </div>
+        `;
+        
+        // Add click handler for detailed breakdown button
+        const detailBtn = statsSection.querySelector('#mobile-show-detailed-areas');
+        if (detailBtn) {
+            detailBtn.onclick = () => {
+                // Close the side menu first
+                const menu = document.getElementById('mobile-side-menu');
+                const overlay = document.getElementById('mobile-overlay');
+                menu?.classList.remove('open');
+                overlay?.classList.remove('visible');
+                
+                // Show detailed modal
+                if (window.showDetailedAreasModal) {
+                    window.showDetailedAreasModal(areaData);
+                }
+            };
+        }
+        
+        console.log('✅ Mobile area stats updated');
     }
 
     /**

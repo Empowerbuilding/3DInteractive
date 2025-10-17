@@ -798,6 +798,9 @@ class AreaIntegration {
         window.downloadAreaReport = () => this.downloadAreaReport();
         window.showDetailedAreasModal = (areas) => this.showDetailedAreasModal(areas);
         
+        // Make AreaCalculator class available globally for mobile app
+        window.AreaCalculator = AreaCalculator;
+        
         console.log('✅ Global area functions exposed');
     }
 }
