@@ -5,8 +5,8 @@ import { AreaCalculator } from './area-calculator.js';
 
 class AreaIntegration {
     constructor() {
-        // Initialize area calculator with default grid size
-        this.areaCalculator = new AreaCalculator(20);
+        // Initialize area calculator as null - will be created with correct gridSize later
+        this.areaCalculator = null;
         this.currentAreaData = null;
         this.updateTimeout = null;
         this.isInitialized = false;
@@ -138,6 +138,11 @@ class AreaIntegration {
                 return null;
             }
             
+            // Initialize AreaCalculator if not already done or if gridSize has changed
+            if (!this.areaCalculator || this.areaCalculator.gridSize !== floorplanData.gridSize) {
+                this.initializeAreaCalculator(floorplanData);
+            }
+            
             // Calculate areas
             const areas = this.areaCalculator.calculateAllAreas(floorplanData);
             
@@ -182,6 +187,25 @@ class AreaIntegration {
         }
         
         return null;
+    }
+
+    /**
+     * Initialize AreaCalculator with correct gridSize from floorplan data
+     * @param {Object} floorplanData - Floorplan data containing gridSize
+     * @returns {boolean} True if initialized successfully
+     */
+    initializeAreaCalculator(floorplanData) {
+        if (!floorplanData || typeof floorplanData.gridSize !== 'number') {
+            console.warn('⚠️ No valid gridSize found in floorplan data, using default of 5 pixels per foot');
+            // Default to 5 pixels per foot (desktop) if gridSize not available
+            this.areaCalculator = new AreaCalculator(5);
+            return true;
+        }
+        
+        // Create AreaCalculator with the correct gridSize from floorplan data
+        this.areaCalculator = new AreaCalculator(floorplanData.gridSize);
+        console.log(`✅ AreaCalculator initialized with gridSize: ${floorplanData.gridSize} pixels per foot`);
+        return true;
     }
 
     /**
@@ -261,6 +285,11 @@ class AreaIntegration {
      * @param {number} squareFootage - Total living space
      */
     updateSquareFootageDisplay(squareFootage) {
+        if (!this.areaCalculator) {
+            console.warn('⚠️ AreaCalculator not available for updating square footage display');
+            return;
+        }
+        
         // Look for existing square footage displays and update them
         const elements = document.querySelectorAll('[data-square-footage], .square-footage, #square-footage');
         elements.forEach(element => {
@@ -306,6 +335,10 @@ class AreaIntegration {
      * @returns {string} HTML content
      */
     generateAreaPanelHTML(areas) {
+        if (!this.areaCalculator) {
+            return '<p>Area calculator not initialized</p>';
+        }
+        
         const totals = areas.totals;
         
         return `
@@ -579,6 +612,10 @@ class AreaIntegration {
      * @returns {string} HTML content
      */
     generateDetailedAreaHTML(areas) {
+        if (!this.areaCalculator) {
+            return '<p>Area calculator not initialized</p>';
+        }
+        
         const totals = areas.totals;
         const breakdown = areas.breakdown;
         const floors = areas.floors;
@@ -732,8 +769,8 @@ class AreaIntegration {
      * Download area report as text file
      */
     downloadAreaReport() {
-        if (!this.currentAreaData) {
-            console.warn('⚠️ No area data available for download');
+        if (!this.currentAreaData || !this.areaCalculator) {
+            console.warn('⚠️ No area data or calculator available for download');
             return;
         }
         
@@ -755,6 +792,11 @@ class AreaIntegration {
      * @param {Object} areas - Area calculation results
      */
     downloadReport(areas) {
+        if (!this.areaCalculator) {
+            console.warn('⚠️ AreaCalculator not available for download');
+            return;
+        }
+        
         const report = this.areaCalculator.formatAreaReport(areas);
         const blob = new Blob([report], { type: 'text/plain' });
         const url = URL.createObjectURL(blob);
@@ -781,7 +823,7 @@ class AreaIntegration {
         const workflowData = {
             areas: this.currentAreaData,
             timestamp: new Date().toISOString(),
-            gridSize: this.areaCalculator.gridSize
+            gridSize: this.areaCalculator ? this.areaCalculator.gridSize : null
         };
         
         console.log('📐 Area data formatted for n8n workflow:', workflowData);
