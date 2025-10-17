@@ -376,6 +376,38 @@ document.addEventListener('DOMContentLoaded', () => {
     window.floorPlanApp = floorPlanApp;
     console.log('✅ Application initialized successfully');
 
+    // ==================== AREA CALCULATIONS TEST FUNCTION ====================
+    // Test function to verify area calculations work
+    window.testAreaCalculations = function testAreaCalculations() {
+        console.log('🧪 Testing Area Calculations...');
+        
+        // Test 1: Get floorplan data
+        const floorplanData = window.floorPlanApp?.floorPlanEditor?.getFloorPlanData();
+        console.log('Floorplan data:', floorplanData ? '✅' : '❌');
+        
+        // Test 2: Calculate areas
+        const areas = window.updateComprehensiveMeasurements?.();
+        console.log('Area calculations:', areas ? '✅' : '❌');
+        
+        // Test 3: UI updates
+        const panel = document.getElementById('area-details-panel');
+        console.log('UI panel exists:', panel ? '✅' : '❌');
+        console.log('UI panel visible:', panel?.style.display !== 'none' ? '✅' : '❌');
+        
+        // Test 4: Export for workflow
+        const exportData = window.exportAreaDataForWorkflow?.();
+        console.log('Export data:', exportData ? '✅' : '❌');
+        
+        console.log('📊 Test Results:', {
+            floorplanData: !!floorplanData,
+            areas: !!areas,
+            uiPanel: !!panel,
+            exportData: !!exportData
+        });
+        
+        return areas;
+    };
+
     // ==================== COLLAPSIBLE SIDEBAR SECTIONS ====================
     // Setup collapsible functionality for sidebar sections
     document.querySelectorAll('.collapsible-header').forEach(header => {

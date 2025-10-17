@@ -601,6 +601,18 @@ async function triggerUpscaleWithLead(leadData, statusText) {
     formData.append('source', 'floor-plan-designer');
     formData.append('device', isMobile ? 'mobile' : 'desktop');
 
+    // Calculate comprehensive areas
+    let areaData = null;
+    if (window.exportAreaDataForWorkflow) {
+        areaData = window.exportAreaDataForWorkflow();
+        console.log('📐 Area data calculated for n8n:', areaData);
+    }
+
+    // Add area data to FormData
+    if (areaData) {
+        formData.append('areaData', JSON.stringify(areaData));
+    }
+
     // Get design data
     console.log('🔍 Attempting to get design data...');
     

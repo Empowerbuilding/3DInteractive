@@ -2049,6 +2049,325 @@ button {
     min-height: 18px;
 }
 
+/* ==================== AREA CALCULATIONS STYLES ==================== */
+
+/* Area Details Panel */
+#area-details-panel {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-radius: 12px;
+    padding: 20px;
+    margin: 16px 0;
+    box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+#area-details-panel .section-title {
+    color: white;
+    margin-bottom: 16px;
+    font-size: 16px;
+    font-weight: 700;
+}
+
+/* Area Grid */
+.area-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 12px;
+    margin-bottom: 16px;
+}
+
+/* Area Items */
+.area-item {
+    background: rgba(255, 255, 255, 0.15);
+    backdrop-filter: blur(10px);
+    border-radius: 8px;
+    padding: 12px 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: all 0.3s ease;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.area-item:hover {
+    background: rgba(255, 255, 255, 0.25);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.area-label {
+    font-size: 14px;
+    font-weight: 600;
+    color: white;
+}
+
+.area-value {
+    font-size: 16px;
+    font-weight: 700;
+    color: white;
+    font-variant-numeric: tabular-nums;
+}
+
+/* Modal Overlay */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s ease;
+    padding: 20px;
+}
+
+.modal-overlay.active {
+    opacity: 1;
+    visibility: visible;
+}
+
+/* Modal Content */
+.modal-content {
+    background: white;
+    border-radius: 16px;
+    max-width: 700px;
+    max-height: 80vh;
+    width: 100%;
+    overflow: hidden;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    transform: translateY(20px);
+    transition: transform 0.3s ease;
+}
+
+.modal-overlay.active .modal-content {
+    transform: translateY(0);
+}
+
+/* Modal Header */
+.modal-header {
+    padding: 24px 24px 16px 24px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+}
+
+.modal-header h2 {
+    margin: 0;
+    font-size: 20px;
+    font-weight: 700;
+}
+
+.modal-close {
+    background: none;
+    border: none;
+    color: white;
+    font-size: 24px;
+    cursor: pointer;
+    padding: 4px;
+    border-radius: 4px;
+    transition: background 0.2s ease;
+}
+
+.modal-close:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+/* Modal Body */
+.modal-body {
+    padding: 24px;
+    max-height: 60vh;
+    overflow-y: auto;
+}
+
+/* Modal Footer */
+.modal-footer {
+    padding: 16px 24px 24px 24px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    gap: 12px;
+    justify-content: flex-end;
+    background: #f9fafb;
+}
+
+.modal-close-btn {
+    background: var(--primary-color);
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: background 0.2s ease;
+}
+
+.modal-close-btn:hover {
+    background: var(--primary-hover);
+}
+
+/* Area Sections */
+.area-section {
+    margin-bottom: 32px;
+}
+
+.area-section:last-child {
+    margin-bottom: 0;
+}
+
+.area-section h3 {
+    margin: 0 0 16px 0;
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--text-primary);
+    border-bottom: 2px solid var(--primary-color);
+    padding-bottom: 8px;
+}
+
+/* Area Tables */
+.area-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+    background: white;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.area-table th {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 12px 16px;
+    text-align: left;
+    font-weight: 700;
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.area-table td {
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border);
+    transition: background 0.2s ease;
+}
+
+.area-table tbody tr:hover {
+    background: #f8fafc;
+}
+
+.area-table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+.area-table .area-value {
+    text-align: right;
+    font-weight: 600;
+    color: var(--primary-color);
+    font-variant-numeric: tabular-nums;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .modal-overlay {
+        padding: 16px;
+    }
+    
+    .modal-content {
+        max-width: 100%;
+        max-height: 90vh;
+        border-radius: 12px;
+    }
+    
+    .modal-header {
+        padding: 20px 20px 12px 20px;
+    }
+    
+    .modal-header h2 {
+        font-size: 18px;
+    }
+    
+    .modal-body {
+        padding: 20px;
+        max-height: 70vh;
+    }
+    
+    .modal-footer {
+        padding: 12px 20px 20px 20px;
+        flex-direction: column;
+    }
+    
+    .modal-footer button {
+        width: 100%;
+    }
+    
+    .area-table {
+        font-size: 12px;
+    }
+    
+    .area-table th,
+    .area-table td {
+        padding: 8px 12px;
+    }
+    
+    .area-table th {
+        font-size: 11px;
+    }
+    
+    /* Stack area grid on mobile */
+    .area-grid {
+        grid-template-columns: 1fr;
+        gap: 8px;
+    }
+    
+    .area-item {
+        padding: 10px 12px;
+    }
+    
+    .area-label {
+        font-size: 13px;
+    }
+    
+    .area-value {
+        font-size: 14px;
+    }
+}
+
+/* Print Styles */
+@media print {
+    .modal-overlay {
+        display: none;
+    }
+    
+    .area-item {
+        background: white;
+        color: black;
+        border: 1px solid #ccc;
+    }
+    
+    .area-label,
+    .area-value {
+        color: black;
+    }
+    
+    #area-details-panel {
+        background: white;
+        color: black;
+        border: 1px solid #ccc;
+    }
+    
+    #area-details-panel .section-title {
+        color: black;
+    }
+}
+
 /* Mobile section titles */
 .mobile-section-title {
     font-size: 13px;
