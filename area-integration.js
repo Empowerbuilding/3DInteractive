@@ -51,6 +51,38 @@ class AreaIntegration {
     }
 
     /**
+     * Create area panel in sidebar
+     */
+    createAreaPanel() {
+        console.log('📐 Creating area panel...');
+        
+        let panel = document.getElementById('area-details-panel');
+        
+        if (!panel) {
+            panel = document.createElement('div');
+            panel.id = 'area-details-panel';
+            panel.className = 'sidebar-section';
+            panel.style.display = 'none';
+            
+            const sidebar = document.querySelector('.sidebar');
+            const infoPanel = document.querySelector('.info-panel');
+            
+            if (sidebar) {
+                if (infoPanel && infoPanel.nextSibling) {
+                    sidebar.insertBefore(panel, infoPanel.nextSibling);
+                } else {
+                    sidebar.appendChild(panel);
+                }
+                console.log('✅ Area panel created');
+            } else {
+                console.error('❌ Sidebar not found');
+            }
+        }
+        
+        return panel;
+    }
+
+    /**
      * Hook into the floor plan editor's render cycle
      */
     hookIntoRenderCycle() {
@@ -157,19 +189,71 @@ class AreaIntegration {
      * @param {Object} areas - Area calculation results
      */
     updateAreaDisplays(areas) {
-        if (!areas || !areas.totals) return;
-        
-        // Update existing square footage display if it exists
-        this.updateSquareFootageDisplay(areas.totals.totalLivingSpace);
-        
-        // Create/update area details panel
-        this.createAreaDetailsPanel(areas);
-        
-        // Show/hide panel based on whether there's data
-        const panel = document.getElementById('area-details-panel');
-        if (panel) {
-            panel.style.display = areas.totals.totalLivingSpace > 0 ? 'block' : 'none';
+        if (!areas || !areas.totals) {
+            console.warn('⚠️ No area data to display');
+            return;
         }
+        
+        let panel = document.getElementById('area-details-panel');
+        
+        if (!panel) {
+            panel = this.createAreaPanel();
+        }
+        
+        if (!panel) {
+            console.error('❌ Could not create panel');
+            return;
+        }
+        
+        // Show the panel
+        panel.style.display = 'block';
+        
+        // Build content with inline styles
+        panel.innerHTML = `
+            <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border-radius: 12px; padding: 20px; box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);">
+                <h3 style="color: white; margin: 0 0 16px 0; font-size: 18px; font-weight: 600;">
+                    📐 Area Calculations
+                </h3>
+                
+                <div style="display: grid; gap: 12px; margin-bottom: 12px;">
+                    <!-- Living Space -->
+                    <div style="background: rgba(255, 255, 255, 0.15); backdrop-filter: blur(10px); border-radius: 8px; padding: 12px 16px; display: flex; justify-content: space-between; align-items: center;">
+                        <span style="font-size: 14px; font-weight: 500;">Living Space:</span>
+                        <span style="font-size: 16px; font-weight: 700;">${areas.totals.totalLivingSpace.toLocaleString()} sq ft</span>
+                    </div>
+                    
+                    <!-- Total Walls -->
+                    <div style="background: rgba(255, 255, 255, 0.15); backdrop-filter: blur(10px); border-radius: 8px; padding: 12px 16px; display: flex; justify-content: space-between; align-items: center;">
+                        <span style="font-size: 14px; font-weight: 500;">Total Walls:</span>
+                        <span style="font-size: 16px; font-weight: 700;">${areas.totals.wallArea.toLocaleString()} sq ft</span>
+                    </div>
+                    
+                    <!-- Total Roof -->
+                    <div style="background: rgba(255, 255, 255, 0.15); backdrop-filter: blur(10px); border-radius: 8px; padding: 12px 16px; display: flex; justify-content: space-between; align-items: center;">
+                        <span style="font-size: 14px; font-weight: 500;">Total Roof:</span>
+                        <span style="font-size: 16px; font-weight: 700;">${areas.totals.roofArea.toLocaleString()} sq ft</span>
+                    </div>
+                    
+                    <!-- Patios -->
+                    <div style="background: rgba(255, 255, 255, 0.15); backdrop-filter: blur(10px); border-radius: 8px; padding: 12px 16px; display: flex; justify-content: space-between; align-items: center;">
+                        <span style="font-size: 14px; font-weight: 500;">Patios:</span>
+                        <span style="font-size: 16px; font-weight: 700;">${areas.totals.patioArea.toLocaleString()} sq ft</span>
+                    </div>
+                </div>
+                
+                <button id="show-detailed-areas-btn" style="width: 100%; padding: 10px 20px; background: rgba(255, 255, 255, 0.2); color: white; border: 2px solid white; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s ease;">
+                    View Detailed Breakdown
+                </button>
+            </div>
+        `;
+        
+        // Add click handler for detail button
+        const detailBtn = document.getElementById('show-detailed-areas-btn');
+        if (detailBtn) {
+            detailBtn.onclick = () => this.showDetailedModal(areas);
+        }
+        
+        console.log('✅ Area panel updated with data');
     }
 
     /**
@@ -308,6 +392,185 @@ class AreaIntegration {
         requestAnimationFrame(() => {
             modal.classList.add('active');
         });
+    }
+
+    /**
+     * Show detailed modal with inline styles (fallback method)
+     * @param {Object} areas - Area calculation results
+     */
+    showDetailedModal(areas) {
+        // Remove existing modal if any
+        const existing = document.querySelector('.area-modal-overlay');
+        if (existing) existing.remove();
+        
+        // Create modal
+        const modal = document.createElement('div');
+        modal.className = 'area-modal-overlay';
+        modal.style.cssText = `
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0, 0, 0, 0.7); display: flex;
+            align-items: center; justify-content: center;
+            z-index: 10000; padding: 20px;
+        `;
+        
+        modal.innerHTML = `
+            <div style="background: white; border-radius: 16px; max-width: 700px; width: 100%; max-height: 80vh; overflow-y: auto; box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);">
+                <div style="padding: 24px; border-bottom: 2px solid #e0e0e0; display: flex; justify-content: space-between; align-items: center;">
+                    <h2 style="margin: 0; font-size: 24px; color: #2c3e50;">📐 Detailed Area Breakdown</h2>
+                    <button class="close-modal-btn" style="background: none; border: none; font-size: 28px; color: #999; cursor: pointer;">✕</button>
+                </div>
+                
+                <div style="padding: 24px;">
+                    ${this.generateDetailedHTML(areas)}
+                </div>
+                
+                <div style="padding: 16px 24px; border-top: 2px solid #e0e0e0; display: flex; gap: 12px; justify-content: flex-end;">
+                    <button class="download-btn" style="padding: 10px 20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer;">
+                        📄 Download Report
+                    </button>
+                    <button class="close-modal-btn" style="padding: 10px 20px; background: #e0e0e0; color: #333; border: none; border-radius: 8px; font-weight: 600; cursor: pointer;">
+                        Close
+                    </button>
+                </div>
+            </div>
+        `;
+        
+        document.body.appendChild(modal);
+        
+        // Event listeners
+        modal.querySelectorAll('.close-modal-btn').forEach(btn => {
+            btn.onclick = () => modal.remove();
+        });
+        
+        modal.querySelector('.download-btn').onclick = () => {
+            this.downloadReport(areas);
+        };
+        
+        modal.onclick = (e) => {
+            if (e.target === modal) modal.remove();
+        };
+    }
+
+    /**
+     * Generate detailed HTML with inline styles (fallback method)
+     * @param {Object} areas - Area calculation results
+     * @returns {string} HTML content
+     */
+    generateDetailedHTML(areas) {
+        let html = `
+            <div style="margin-bottom: 32px;">
+                <h3 style="color: #667eea; font-size: 18px; margin: 0 0 16px 0; padding-bottom: 8px; border-bottom: 2px solid #e0e0e0;">
+                    📊 Summary Totals
+                </h3>
+                <table style="width: 100%; border-collapse: collapse;">
+                    <tr style="border-bottom: 1px solid #f0f0f0;">
+                        <td style="padding: 12px 0; color: #555; font-weight: 500;">Total Living Space</td>
+                        <td style="padding: 12px 0; text-align: right; font-weight: 700; color: #667eea;">
+                            ${areas.totals.totalLivingSpace.toLocaleString()} sq ft
+                        </td>
+                    </tr>
+                    <tr style="border-bottom: 1px solid #f0f0f0;">
+                        <td style="padding: 12px 0; color: #555; font-weight: 500;">Total Wall Area</td>
+                        <td style="padding: 12px 0; text-align: right; font-weight: 700; color: #667eea;">
+                            ${areas.totals.wallArea.toLocaleString()} sq ft
+                        </td>
+                    </tr>
+                    <tr style="border-bottom: 1px solid #f0f0f0;">
+                        <td style="padding: 12px 0; color: #555; font-weight: 500;">Total Roof Area</td>
+                        <td style="padding: 12px 0; text-align: right; font-weight: 700; color: #667eea;">
+                            ${areas.totals.roofArea.toLocaleString()} sq ft
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 12px 0; color: #555; font-weight: 500;">Patio Area</td>
+                        <td style="padding: 12px 0; text-align: right; font-weight: 700; color: #667eea;">
+                            ${areas.totals.patioArea.toLocaleString()} sq ft
+                        </td>
+                    </tr>
+                </table>
+            </div>
+            
+            <div style="margin-bottom: 32px;">
+                <h3 style="color: #667eea; font-size: 18px; margin: 0 0 16px 0; padding-bottom: 8px; border-bottom: 2px solid #e0e0e0;">
+                    🔍 Wall Breakdown
+                </h3>
+                <table style="width: 100%; border-collapse: collapse;">
+                    <tr style="border-bottom: 1px solid #f0f0f0;">
+                        <td style="padding: 12px 0; color: #555; font-weight: 500;">Exterior Walls</td>
+                        <td style="padding: 12px 0; text-align: right; font-weight: 700; color: #667eea;">
+                            ${areas.breakdown.exteriorWallArea.toLocaleString()} sq ft
+                        </td>
+                    </tr>
+                    <tr style="border-bottom: 1px solid #f0f0f0;">
+                        <td style="padding: 12px 0; color: #555; font-weight: 500;">Interior Walls</td>
+                        <td style="padding: 12px 0; text-align: right; font-weight: 700; color: #667eea;">
+                            ${areas.breakdown.interiorWallArea.toLocaleString()} sq ft
+                        </td>
+                    </tr>
+                    <tr style="border-bottom: 1px solid #f0f0f0;">
+                        <td style="padding: 12px 0; color: #555; font-weight: 500;">Windows</td>
+                        <td style="padding: 12px 0; text-align: right; font-weight: 700; color: #667eea;">
+                            ${areas.breakdown.windowArea.toLocaleString()} sq ft
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 12px 0; color: #555; font-weight: 500;">Doors</td>
+                        <td style="padding: 12px 0; text-align: right; font-weight: 700; color: #667eea;">
+                            ${areas.breakdown.doorArea.toLocaleString()} sq ft
+                        </td>
+                    </tr>
+                </table>
+            </div>
+        `;
+        
+        // Add per-floor breakdown
+        areas.floors.forEach(floor => {
+            html += `
+                <div style="margin-bottom: 32px;">
+                    <h3 style="color: #667eea; font-size: 18px; margin: 0 0 16px 0; padding-bottom: 8px; border-bottom: 2px solid #e0e0e0;">
+                        🏢 ${floor.floorName}
+                    </h3>
+                    <table style="width: 100%; border-collapse: collapse;">
+                        <tr style="border-bottom: 1px solid #f0f0f0;">
+                            <td style="padding: 12px 0; color: #555; font-weight: 500;">Floor Area</td>
+                            <td style="padding: 12px 0; text-align: right; font-weight: 700; color: #667eea;">
+                                ${floor.floorArea.toLocaleString()} sq ft
+                            </td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid #f0f0f0;">
+                            <td style="padding: 12px 0; color: #555; font-weight: 500;">Wall Area</td>
+                            <td style="padding: 12px 0; text-align: right; font-weight: 700; color: #667eea;">
+                                ${floor.totalWallArea.toLocaleString()} sq ft
+                            </td>
+                        </tr>
+                        ${floor.roofArea > 0 ? `
+                        <tr style="border-bottom: 1px solid #f0f0f0;">
+                            <td style="padding: 12px 0; color: #555; font-weight: 500;">Roof Area</td>
+                            <td style="padding: 12px 0; text-align: right; font-weight: 700; color: #667eea;">
+                                ${floor.roofArea.toLocaleString()} sq ft
+                            </td>
+                        </tr>
+                        ` : ''}
+                        ${floor.patioArea > 0 ? `
+                        <tr style="border-bottom: 1px solid #f0f0f0;">
+                            <td style="padding: 12px 0; color: #555; font-weight: 500;">Patio Area</td>
+                            <td style="padding: 12px 0; text-align: right; font-weight: 700; color: #667eea;">
+                                ${floor.patioArea.toLocaleString()} sq ft
+                            </td>
+                        </tr>
+                        ` : ''}
+                        <tr>
+                            <td style="padding: 12px 0; color: #555; font-weight: 500;">Perimeter</td>
+                            <td style="padding: 12px 0; text-align: right; font-weight: 700; color: #667eea;">
+                                ${floor.perimeter} ft
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+            `;
+        });
+        
+        return html;
     }
 
     /**
@@ -485,6 +748,24 @@ class AreaIntegration {
         
         URL.revokeObjectURL(url);
         console.log('✅ Area report downloaded');
+    }
+
+    /**
+     * Download report (fallback method)
+     * @param {Object} areas - Area calculation results
+     */
+    downloadReport(areas) {
+        const report = this.areaCalculator.formatAreaReport(areas);
+        const blob = new Blob([report], { type: 'text/plain' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `area-report-${new Date().toISOString().split('T')[0]}.txt`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        console.log('✅ Report downloaded');
     }
 
     /**
